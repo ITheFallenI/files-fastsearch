@@ -54,6 +54,7 @@ namespace Files.App.FastSearch
 
 		private readonly Func<IEngineClient> clientFactory;
 		private readonly Func<bool> tryStartService;
+		private readonly Func<string, bool> canListDirectory;
 		private readonly ConcurrentDictionary<string, VolumeState> volumes = new(StringComparer.OrdinalIgnoreCase);
 		private readonly Lock gate = new();
 		private IEngineClient? client;
@@ -65,15 +66,16 @@ namespace Files.App.FastSearch
 		public bool IsConnected => client?.Connection == EngineConnectionState.Connected;
 
 		public IndexedSearchEngine(ILogger logger)
-			: this(static () => new PipeEngineClient(), TryStartInstalledService)
+			: this(static () => new PipeEngineClient(), TryStartInstalledService, CanCurrentUserListDirectory)
 		{
 			FileLog.Attach(logger);
 		}
 
-		internal IndexedSearchEngine(Func<IEngineClient> clientFactory, Func<bool> tryStartService)
+		internal IndexedSearchEngine(Func<IEngineClient> clientFactory, Func<bool> tryStartService, Func<string, bool>? canListDirectory = null)
 		{
 			this.clientFactory = clientFactory;
 			this.tryStartService = tryStartService;
+			this.canListDirectory = canListDirectory ?? (static _ => true);
 		}
 
 		public void EnsureStarted()
@@ -146,6 +148,8 @@ namespace Files.App.FastSearch
 				FmfCase.Insensitive,
 				request.IncludeHiddenAndSystem);
 
+			// The service indexes as LocalSystem; only rows the user could also reach by browsing are shown
+			var listableDirectories = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 			var remaining = request.MaxResults;
 			foreach (var scope in scopes)
 			{
@@ -183,12 +187,21 @@ namespace Files.App.FastSearch
 						if (rows.Count == 0)
 							break;
 
-						var page = new IndexedSearchItem[rows.Count];
-						for (var i = 0; i < rows.Count; i++)
-							page[i] = ToItem(rows[i]);
+						var page = new List<IndexedSearchItem>(rows.Count);
+						foreach (var row in rows)
+						{
+							if (!listableDirectories.TryGetValue(row.ParentPath, out var listable))
+								listableDirectories[row.ParentPath] = listable = canListDirectory(row.ParentPath);
+
+							if (listable)
+								page.Add(ToItem(row));
+						}
 
 						offset += rows.Count;
-						remaining -= rows.Count;
+						if (page.Count == 0)
+							continue;
+
+						remaining -= page.Count;
 						yield return page;
 					}
 				}
@@ -247,6 +260,25 @@ namespace Files.App.FastSearch
 					FileLog.Warn("fastsearch", "could not start the indexing service", ex);
 				}
 			});
+		}
+
+		private static bool CanCurrentUserListDirectory(string path)
+		{
+			try
+			{
+				using var entries = Directory.EnumerateFileSystemEntries(path).GetEnumerator();
+				entries.MoveNext();
+				return true;
+			}
+			catch (UnauthorizedAccessException)
+			{
+				return false;
+			}
+			catch (Exception ex) when (ex is IOException or System.Security.SecurityException)
+			{
+				// A folder deleted since it was indexed is not a permission boundary; Files drops stale rows itself
+				return true;
+			}
 		}
 
 		private static bool TryStartInstalledService()

@@ -62,6 +62,28 @@ namespace Files.App.FastSearch.Tests
 		}
 
 		[TestMethod]
+		public async Task Search_LeavesOutRowsInFoldersTheUserCannotList()
+		{
+			var rows = MakeRows(200);
+			for (var i = 0; i < rows.Count; i += 4)
+				rows[i] = rows[i] with { ParentPath = @"C:\Users\Other\" };
+
+			using var server = new FakePipeServer { Rows = rows };
+			var checkedFolders = new List<string>();
+			using var engine = await ConnectAsync(server, canListDirectory: path =>
+			{
+				checkedFolders.Add(path);
+				return !path.StartsWith(@"C:\Users\Other", StringComparison.OrdinalIgnoreCase);
+			});
+
+			var pages = await CollectAsync(engine.SearchAsync(new("file", [], MaxResults: 120), TestContext.CancellationToken));
+
+			Assert.AreEqual(120, pages.Sum(p => p.Count), "hidden rows must not count toward the result limit");
+			Assert.IsFalse(pages.SelectMany(p => p).Any(item => item.Path.StartsWith(@"C:\Users\Other", StringComparison.OrdinalIgnoreCase)));
+			Assert.AreEqual(2, checkedFolders.Count, "each folder is checked once per search");
+		}
+
+		[TestMethod]
 		public async Task Search_SendsScopedCaseInsensitiveQueryPerFolder()
 		{
 			using var server = new FakePipeServer { Rows = MakeRows(1) };
@@ -155,9 +177,9 @@ namespace Files.App.FastSearch.Tests
 				i % 2 == 0 ? $"file{i}.txt" : $"folder{i}",
 				@"C:\Work\"))];
 
-		private static async Task<IndexedSearchEngine> ConnectAsync(FakePipeServer server, Func<int>? onStart = null)
+		private static async Task<IndexedSearchEngine> ConnectAsync(FakePipeServer server, Func<int>? onStart = null, Func<string, bool>? canListDirectory = null)
 		{
-			var engine = new IndexedSearchEngine(() => new PipeEngineClient(server.PipeName), () => { onStart?.Invoke(); return false; });
+			var engine = new IndexedSearchEngine(() => new PipeEngineClient(server.PipeName), () => { onStart?.Invoke(); return false; }, canListDirectory);
 			engine.EnsureStarted();
 			await WaitUntilAsync(() => engine.IsConnected && server.Statuses.Any(s => s.State == VolumeState.Ready && engine.CanSearch(s.Label + "\\")));
 			return engine;
