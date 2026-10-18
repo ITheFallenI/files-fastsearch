@@ -14,7 +14,7 @@ Files FastSearch keeps the Files interface, tabs, thumbnails, previews and file 
 - **Every local NTFS drive** is indexed; the index is saved and reused across restarts.
 - **Normal Files results**: icons, thumbnails, sorting, grouping, context menus and file operations work on search results just as they do elsewhere.
 - **Automatic fallback** to the original Files search for anything the index doesn't cover: network and removable drives, FAT/exFAT/ReFS volumes, archives, tag searches (`tag:`), Windows Search syntax (`kind:`, `$...`), and drives that are still being indexed.
-- **Low overhead**: the index uses roughly 100 MB of RAM per million files, runs as an on-demand service, and stops itself a few minutes after the last Files window closes.
+- **On-demand service**: the index runs locally and the service stops itself after its configured idle period when no clients remain. Memory and scan time depend on the drive and its files.
 - **Installs beside official Files**: its own package identity, settings, app name, `files-fastsearch:` link protocol and `files-fastsearch.exe` alias.
 
 ### Search syntax
@@ -113,7 +113,13 @@ The integration is deliberately small (a new project, one search hook, and ident
 ## Credits and licences
 
 - **[Files](https://github.com/files-community/Files)** by the Files Community, licensed under the [MIT License](../LICENSE-MIT), with some files under the [Mozilla Public License 2.0](../LICENSE-MPL).
-- **[Find My Files](https://github.com/P4suta/find-my-files)** by P4suta, licensed under the [Apache License 2.0](https://github.com/P4suta/find-my-files/blob/main/LICENSE). It is included unmodified as a submodule.
+- **[Find My Files](https://github.com/P4suta/find-my-files)** by P4suta, licensed under the [Apache License 2.0](https://github.com/P4suta/find-my-files/blob/main/LICENSE). The pinned submodule includes local Windows build 22000 sharing and failed-volume recovery changes; see [third-party notices](NOTICE.md).
+
+## Privacy and code signing
+
+The filename index and search queries stay on this computer. See the [privacy policy](FASTSEARCH_PRIVACY.md) for update checks and other network features inherited from Files.
+
+The [code signing policy](FASTSEARCH_CODE_SIGNING.md) explains local test signing and the pending SignPath application. There is no publicly trusted signed FastSearch release yet.
 - Third-party components and their licences are listed in [NOTICE.md](NOTICE.md).
 
 If you like Files, please consider [supporting the Files team](https://files.community/sponsor). Files FastSearch exists because of their work.

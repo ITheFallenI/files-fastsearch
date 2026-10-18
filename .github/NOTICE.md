@@ -12,7 +12,7 @@ Files FastSearch is an unofficial fork of Files (MIT License, with some files un
 
 **Source**: [https://github.com/P4suta/find-my-files](https://github.com/P4suta/find-my-files)
 
-Included unmodified as the `external/find-my-files` git submodule. Files FastSearch ships its `fmf-service` indexing service and compiles its C# named-pipe client and service-control sources (`app/FindMyFiles/Engine`, `app/FindMyFiles/Services`) into `Files.App.FastSearch`.
+Included as the `external/find-my-files` git submodule, with local changes for Windows build 22000 data-root sharing and failed-volume recovery. Files FastSearch ships its `fmf-service` indexing service and compiles its C# named-pipe client and service-control sources (`app/FindMyFiles/Engine`, `app/FindMyFiles/Services`) into `Files.App.FastSearch`. The submodule commit identifies the exact source used by each build.
 
 ### License
 
