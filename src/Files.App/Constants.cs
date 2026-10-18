@@ -172,11 +172,11 @@ namespace Files.App
 
 		public static class ExternalUrl
 		{
-			public const string GitHubRepoUrl = @"https://github.com/files-community/Files";
+			public const string GitHubRepoUrl = @"https://github.com/ITheFallenI/files-fastsearch";
 			public const string DocumentationUrl = @"https://files.community/docs";
 			public const string DiscordUrl = @"https://discord.gg/files";
-			public const string FeatureRequestUrl = @"https://discord.gg/files";
-			public const string BugReportUrl = @"https://github.com/files-community/Files/issues/new?labels=bug&template=bug_report.yml";
+			public const string FeatureRequestUrl = @"https://github.com/ITheFallenI/files-fastsearch/issues/new?labels=enhancement";
+			public const string BugReportUrl = @"https://github.com/ITheFallenI/files-fastsearch/issues/new?labels=bug";
 			public const string PrivacyPolicyUrl = @"https://files.community/privacy";
 			public const string SupportUsUrl = @"https://files.community/sponsor";
 			public const string CrowdinUrl = @"https://crowdin.com/project/files-app";
