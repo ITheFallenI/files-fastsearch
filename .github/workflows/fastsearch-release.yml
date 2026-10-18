@@ -1,0 +1,271 @@
+# Copyright (c) Files Community
+# Licensed under the MIT License.
+
+# Abstract:
+#  Builds a Files FastSearch release and attaches it to a DRAFT GitHub release, which stays
+#  private until a maintainer reviews and publishes it by hand.
+#
+# Workflow:
+#  1. Build and test fmf-service, and generate its third-party notices
+#  2. Sign fmf-service.exe (SignPath), and compute its Authenticode-stable image digest
+#  3. Configure the FastSearch package identity, then build and package Files with that digest pinned
+#  4. Bundle, sign the bundle (SignPath) and write FilesFastSearch.appinstaller
+#  5. Create the draft release
+#
+# Configuration (repository settings):
+#  vars.FASTSEARCH_PUBLISHER            Package publisher; must equal the signing certificate's subject
+#  vars.SIGNPATH_ORGANIZATION_ID        SignPath organization; signing is skipped when unset
+#  vars.SIGNPATH_PROJECT_SLUG           SignPath project
+#  vars.SIGNPATH_SIGNING_POLICY_SLUG    SignPath signing policy (release-signing)
+#  secrets.SIGNPATH_API_TOKEN           SignPath CI user token
+#
+# Unsigned runs are for testing only: they upload the packages as a workflow artifact and never
+# create a release, because unsigned packages can't be installed by ordinary users and the in-app
+# indexing service setup refuses an unsigned fmf-service.exe.
+
+name: FastSearch Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (Major.Minor.Build.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CONFIGURATION: 'Release'
+  PLATFORM: 'x64'
+  WORKING_DIR: '${{ github.workspace }}'
+  SOLUTION_NAME: 'Files.slnx'
+  APP_PROJECT_PATH: 'src\Files.App\Files.App.csproj'
+  PACKAGE_MANIFEST_PATH: 'src\Files.App\Package.appxmanifest'
+  ENGINE_DIR: '${{ github.workspace }}\external\find-my-files\engine'
+  ENGINE_RELEASE_DIR: '${{ github.workspace }}\external\find-my-files\build\engine\release'
+  APPX_PACKAGE_DIR: '${{ github.workspace }}\artifacts\AppxPackages\'
+  RELEASE_ASSETS_DIR: '${{ github.workspace }}\artifacts\Release'
+  SIGNING_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+
+jobs:
+
+  engine:
+
+    runs-on: windows-2025-vs2026
+
+    outputs:
+      service-digest: ${{ steps.digest.outputs.value }}
+
+    steps:
+
+    - name: Validate the version
+      shell: pwsh
+      run: |
+        if ('${{ inputs.version }}' -notmatch '^\d+\.\d+\.\d+\.0$') {
+          Write-Error "Version must look like 1.2.3.0 (the last part must be 0 for MSIX)"
+          exit 1
+        }
+
+    - name: Checkout the repository
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+
+    - name: Install the Rust toolchain pinned by Find My Files
+      shell: pwsh
+      run: |
+        $toolchain = (Select-String -Path external\find-my-files\mise.toml -Pattern '^rust = "(.+)"').Matches[0].Groups[1].Value
+        rustup toolchain install $toolchain --profile minimal
+        "RUSTUP_TOOLCHAIN=$toolchain" >> $env:GITHUB_ENV
+        $about = (Select-String -Path external\find-my-files\mise.toml -Pattern '^"cargo:cargo-about" = "(.+)"').Matches[0].Groups[1].Value
+        "CARGO_ABOUT_VERSION=$about" >> $env:GITHUB_ENV
+
+    - name: Test the engine and service
+      shell: pwsh
+      working-directory: ${{ env.ENGINE_DIR }}
+      run: cargo test --locked --workspace --no-fail-fast
+
+    - name: Build fmf-service
+      shell: pwsh
+      working-directory: ${{ env.ENGINE_DIR }}
+      run: cargo build --locked --release -p fmf-service
+
+    - name: Generate fmf-service third-party notices
+      shell: pwsh
+      working-directory: ${{ env.ENGINE_DIR }}
+      run: |
+        cargo install cargo-about --locked --version $env:CARGO_ABOUT_VERSION
+        cargo fetch --locked
+        cargo about generate --offline --locked `
+          --manifest-path crates/fmf-service/Cargo.toml `
+          -c about.toml about.hbs `
+          -o "$env:ENGINE_RELEASE_DIR\fmf-service-THIRD-PARTY.txt"
+
+    - name: Upload unsigned fmf-service
+      id: upload-unsigned
+      uses: actions/upload-artifact@v7
+      with:
+        name: fmf-service-unsigned
+        path: |
+          ${{ env.ENGINE_RELEASE_DIR }}\fmf-service.exe
+          ${{ env.ENGINE_RELEASE_DIR }}\fmf-service-THIRD-PARTY.txt
+        if-no-files-found: error
+
+    - name: Sign fmf-service with SignPath
+      if: env.SIGNING_ENABLED == 'true'
+      uses: signpath/github-action-submit-signing-request@v1
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+        signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        artifact-configuration-slug: fmf-service
+        github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+        wait-for-completion: true
+        output-artifact-directory: ${{ env.ENGINE_RELEASE_DIR }}
+
+    # The digest excludes the certificate table, so it is the same for the unsigned and signed image
+    - name: Compute the service image digest
+      id: digest
+      shell: pwsh
+      run: |
+        $digest = ./.github/scripts/Get-PeImageDigest.ps1 -Path "$env:ENGINE_RELEASE_DIR\fmf-service.exe"
+        if ($digest -notmatch '^[0-9a-f]{64}$') { Write-Error "Unexpected digest '$digest'"; exit 1 }
+        "value=$digest" >> $env:GITHUB_OUTPUT
+        Write-Host "fmf-service.exe image digest: $digest"
+
+    - name: Upload fmf-service
+      uses: actions/upload-artifact@v7
+      with:
+        name: fmf-service
+        path: |
+          ${{ env.ENGINE_RELEASE_DIR }}\fmf-service.exe
+          ${{ env.ENGINE_RELEASE_DIR }}\fmf-service-THIRD-PARTY.txt
+        if-no-files-found: error
+
+  package:
+
+    needs: engine
+
+    runs-on: windows-2025-vs2026
+
+    permissions:
+      contents: write
+
+    steps:
+
+    - name: Checkout the repository
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v3
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+
+    - name: Download fmf-service
+      uses: actions/download-artifact@v8
+      with:
+        name: fmf-service
+        path: ${{ env.ENGINE_RELEASE_DIR }}
+
+    - name: Configure the FastSearch package identity
+      shell: pwsh
+      run: |
+        $publisher = if ($env:FASTSEARCH_PUBLISHER) { $env:FASTSEARCH_PUBLISHER } else { 'CN=Files FastSearch contributors' }
+        . './.github/scripts/Configure-AppxManifest.ps1' `
+          -Branch "SideloadFastSearch" `
+          -PackageManifestPath "$env:PACKAGE_MANIFEST_PATH" `
+          -Publisher $publisher `
+          -WorkingDir "$env:WORKING_DIR"
+        [xml]$manifest = Get-Content $env:PACKAGE_MANIFEST_PATH
+        $manifest.Package.Identity.Version = '${{ inputs.version }}'
+        $manifest.Save((Resolve-Path $env:PACKAGE_MANIFEST_PATH))
+      env:
+        FASTSEARCH_PUBLISHER: ${{ vars.FASTSEARCH_PUBLISHER }}
+
+    - name: Restore Files
+      shell: pwsh
+      run: |
+        msbuild $env:SOLUTION_NAME `
+          -t:Restore `
+          -p:Platform=$env:PLATFORM `
+          -p:Configuration=$env:CONFIGURATION `
+          -p:PublishReadyToRun=true `
+          -v:quiet
+
+    - name: Build & package Files FastSearch
+      shell: pwsh
+      run: |
+        msbuild "$env:APP_PROJECT_PATH" `
+          -t:Build `
+          -p:Platform=$env:PLATFORM `
+          -p:Configuration=$env:CONFIGURATION `
+          -p:AppxPackageDir="$env:APPX_PACKAGE_DIR" `
+          -p:AppxBundle=Never `
+          -p:GenerateAppxPackageOnBuild=true `
+          -p:UapAppxPackageBuildMode=SideloadOnly `
+          -p:AppxPackageSigningEnabled=false `
+          -p:SkipRustBuild=true `
+          -p:FmfServiceImageSha256=${{ needs.engine.outputs.service-digest }} `
+          -v:quiet
+
+    - name: Create the msixbundle
+      shell: pwsh
+      run: |
+        . './.github/scripts/Create-MsixBundle.ps1' `
+          -AppxPackageDir "$env:APPX_PACKAGE_DIR" `
+          -BundleName "FilesFastSearch" `
+          -PackageManifestPath "$env:PACKAGE_MANIFEST_PATH" `
+          -BuildMode "SideloadOnly"
+
+    - name: Upload unsigned packages
+      id: upload-unsigned
+      uses: actions/upload-artifact@v7
+      with:
+        name: 'FastSearch packages (unsigned)'
+        path: ${{ env.APPX_PACKAGE_DIR }}
+        if-no-files-found: error
+
+    - name: Sign the msixbundle with SignPath
+      if: env.SIGNING_ENABLED == 'true'
+      uses: signpath/github-action-submit-signing-request@v1
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+        signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+        artifact-configuration-slug: msixbundle
+        github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+        wait-for-completion: true
+        output-artifact-directory: ${{ env.APPX_PACKAGE_DIR }}
+
+    - name: Collect release assets and write the appinstaller
+      if: env.SIGNING_ENABLED == 'true'
+      shell: pwsh
+      run: |
+        . './.github/scripts/New-FastSearchAppInstaller.ps1' `
+          -AppxPackageDir "$env:APPX_PACKAGE_DIR" `
+          -OutputDir "$env:RELEASE_ASSETS_DIR" `
+          -PackageManifestPath "$env:PACKAGE_MANIFEST_PATH" `
+          -Repository "${{ github.repository }}" `
+          -Tag "v${{ inputs.version }}"
+        Copy-Item "$env:ENGINE_RELEASE_DIR\fmf-service-THIRD-PARTY.txt" "$env:RELEASE_ASSETS_DIR"
+
+    - name: Create the draft release
+      if: env.SIGNING_ENABLED == 'true'
+      shell: pwsh
+      run: |
+        gh release create "v${{ inputs.version }}" (Get-ChildItem "$env:RELEASE_ASSETS_DIR").FullName `
+          --draft `
+          --target "${{ github.sha }}" `
+          --title "Files FastSearch ${{ inputs.version }}" `
+          --notes "Unofficial build of Files with indexed search. See the README for installation and known limitations."
+      env:
+        GH_TOKEN: ${{ github.token }}

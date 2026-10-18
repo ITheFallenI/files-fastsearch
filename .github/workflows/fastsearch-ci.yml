@@ -1,0 +1,128 @@
+# Copyright (c) Files Community
+# Licensed under the MIT License.
+
+# Abstract:
+#  Builds and tests Files FastSearch: the Find My Files engine and service (Rust), the
+#  Files.App.FastSearch adapter, and the Files app (Debug x64, which also bundles fmf-service.exe).
+#  The upstream Files workflows only run in files-community repositories, so this is the fork's CI.
+
+name: FastSearch CI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'assets/**'
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'assets/**'
+      - 'docs/**'
+      - '*.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLUTION_PATH: '${{ github.workspace }}\Files.slnx'
+  APP_PROJECT_PATH: '${{ github.workspace }}\src\Files.App\Files.App.csproj'
+  ENGINE_DIR: '${{ github.workspace }}\external\find-my-files\engine'
+  ADAPTER_TESTS_PROJECT_PATH: '${{ github.workspace }}\tests\Files.App.FastSearch.Tests\Files.App.FastSearch.Tests.csproj'
+
+jobs:
+
+  engine:
+
+    runs-on: windows-2025-vs2026
+
+    steps:
+
+    - name: Checkout the repository
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+
+    - name: Install the Rust toolchain pinned by Find My Files
+      shell: pwsh
+      run: |
+        $toolchain = (Select-String -Path external\find-my-files\mise.toml -Pattern '^rust = "(.+)"').Matches[0].Groups[1].Value
+        rustup toolchain install $toolchain --profile minimal
+        "RUSTUP_TOOLCHAIN=$toolchain" >> $env:GITHUB_ENV
+
+    - name: Cache Cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          external/find-my-files/build/engine
+        key: cargo-${{ hashFiles('external/find-my-files/engine/Cargo.lock') }}
+
+    # Hosted runners are elevated, but the admin-only tests stay ignored: they need a real local
+    # account and register real scheduled tasks, which is the release checklist's job, not CI's.
+    - name: Test the engine and service
+      shell: pwsh
+      working-directory: ${{ env.ENGINE_DIR }}
+      run: cargo test --locked --workspace --no-fail-fast
+
+    - name: Build fmf-service
+      shell: pwsh
+      working-directory: ${{ env.ENGINE_DIR }}
+      run: cargo build --locked --release -p fmf-service
+
+    - name: Upload fmf-service
+      uses: actions/upload-artifact@v7
+      with:
+        name: fmf-service
+        path: external/find-my-files/build/engine/release/fmf-service.exe
+        if-no-files-found: error
+
+  app:
+
+    needs: engine
+
+    runs-on: windows-2025-vs2026
+
+    steps:
+
+    - name: Checkout the repository
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+
+    - name: Download fmf-service
+      uses: actions/download-artifact@v8
+      with:
+        name: fmf-service
+        path: external/find-my-files/build/engine/release
+
+    - name: Test the indexed search adapter
+      shell: pwsh
+      run: dotnet run --project "$env:ADAPTER_TESTS_PROJECT_PATH" -p:Platform=x64
+
+    - name: Restore Files
+      shell: pwsh
+      run: msbuild "$env:SOLUTION_PATH" -t:Restore -p:Platform=x64 -p:Configuration=Debug -v:quiet
+
+    - name: Build Files
+      shell: pwsh
+      run: |
+        msbuild "$env:APP_PROJECT_PATH" `
+          -t:Build `
+          -p:Platform=x64 `
+          -p:Configuration=Debug `
+          -p:SkipRustBuild=true `
+          -v:quiet `
+          -clp:ErrorsOnly

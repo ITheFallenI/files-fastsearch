@@ -195,6 +195,7 @@
         <Warning Condition="!Exists('$(FindMyFilesRoot)build\engine\release\fmf-service.exe')" Text="fmf-service.exe was not built, so this package can't install the indexing service." />
         <ItemGroup Condition="Exists('$(FindMyFilesRoot)build\engine\release\fmf-service.exe')">
             <Content Include="$(FindMyFilesRoot)build\engine\release\fmf-service.exe" Link="fmf-service.exe" CopyToOutputDirectory="PreserveNewest" />
+            <Content Include="$(FindMyFilesRoot)build\engine\release\fmf-service-THIRD-PARTY.txt" Condition="Exists('$(FindMyFilesRoot)build\engine\release\fmf-service-THIRD-PARTY.txt')" Link="Licenses\fmf-service-THIRD-PARTY.txt" CopyToOutputDirectory="PreserveNewest" />
         </ItemGroup>
     </Target>
     <ItemGroup>

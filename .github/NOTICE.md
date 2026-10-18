@@ -16,7 +16,7 @@ Included unmodified as the `external/find-my-files` git submodule. Files FastSea
 
 ### License
 
-Apache License, Version 2.0. The full text is in `external/find-my-files/LICENSE` and is included in release packages as `Licenses\find-my-files-LICENSE.txt`. The Rust crates compiled into `fmf-service.exe` are listed with their licences in `Licenses\fmf-service-THIRD-PARTY.html`, generated at release time with `cargo about` from `external/find-my-files/engine/about.toml`.
+Apache License, Version 2.0. The full text is in `external/find-my-files/LICENSE` and is included in release packages as `Licenses\find-my-files-LICENSE.txt`. The Rust crates compiled into `fmf-service.exe` are listed with their licences in `Licenses\fmf-service-THIRD-PARTY.txt`, generated at release time with `cargo about` from `external/find-my-files/engine/about.toml` and `about.hbs`.
 
 
 ## 7-Zip
