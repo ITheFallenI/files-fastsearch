@@ -129,6 +129,9 @@ namespace Files.App.Helpers
 
 			_ = Task.Run(FileTagsHelper.UpdateTagsDb);
 
+			// Connect early so the first search can already use the index
+			_ = Task.Run(Ioc.Default.GetRequiredService<IIndexedSearchEngine>().EnsureStarted);
+
 			_ = Task.Run(async () =>
 			{
 				// The follwing method invokes UI thread, so we run it in a separate task
@@ -365,6 +368,7 @@ namespace Files.App.Helpers
 					.AddSingleton<IResourcesService, ResourcesService>()
 					.AddSingleton<IWindowsJumpListService, WindowsJumpListService>()
 					.AddSingleton<IStorageTrashBinService, StorageTrashBinService>()
+					.AddSingleton<IIndexedSearchEngine>(sp => new IndexedSearchEngine(sp.GetRequiredService<ILogger<IndexedSearchEngine>>()))
 					.AddSingleton<IRemovableDrivesService, RemovableDrivesService>()
 					.AddSingleton<INetworkService, NetworkService>()
 					.AddSingleton<IStartMenuService, StartMenuService>()

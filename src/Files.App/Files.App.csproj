@@ -156,6 +156,7 @@
         <ProjectReference Include="..\Files.App.CsWin32\Files.App.CsWin32.csproj" />
         <ProjectReference Include="..\Files.App.BackgroundTasks\Files.App.BackgroundTasks.csproj" />
         <ProjectReference Include="..\Files.App.Controls\Files.App.Controls.csproj" />
+        <ProjectReference Include="..\Files.App.FastSearch\Files.App.FastSearch.csproj" />
         <ProjectReference Include="..\Files.App.Storage\Files.App.Storage.csproj" />
         <ProjectReference Include="..\Files.Core.Storage\Files.Core.Storage.csproj" />
         <ProjectReference Include="..\Files.Shared\Files.Shared.csproj" />

@@ -23,11 +23,15 @@ namespace Files.App.Utils.Storage
 		private DrivesViewModel drivesViewModel = Ioc.Default.GetRequiredService<DrivesViewModel>();
 		private readonly IStorageTrashBinService StorageTrashBinService = Ioc.Default.GetRequiredService<IStorageTrashBinService>();
 		private readonly IFileTagsSettingsService fileTagsSettingsService = Ioc.Default.GetRequiredService<IFileTagsSettingsService>();
+		private readonly IIndexedSearchEngine? indexedSearchEngine = Ioc.Default.GetService<IIndexedSearchEngine>();
 		private readonly ILogger logger = Ioc.Default.GetRequiredService<ILogger<FolderSearch>>();
 
 		private static readonly string folderTypeTextLocalized = Strings.Folder.GetLocalizedResource();
 
 		private const uint defaultStepSize = 500;
+
+		// Bounds the results page for very broad queries; the index returns rows already sorted by name
+		private const int maxIndexedResultCount = 20_000;
 
 		public string? Query { get; set; }
 
@@ -496,6 +500,9 @@ namespace Files.App.Utils.Storage
 			}
 			else
 			{
+				if (await TryAddIndexedItemsAsync(folder, results, token))
+					return;
+
 				var workingFolder = await GetStorageFolderAsync(folder);
 				var storageFolder = workingFolder ? workingFolder.Result : null;
 
@@ -523,6 +530,109 @@ namespace Files.App.Utils.Storage
 
 				await SearchWithWin32Async(folder, hiddenOnlyFromWin32, results, token);
 			}
+		}
+
+		/// <summary>
+		/// Answers the search from the Find My Files index when it covers the folder's drive and the query is plain filename syntax.
+		/// </summary>
+		/// <returns>False when the regular search should run instead.</returns>
+		private async Task<bool> TryAddIndexedItemsAsync(string folder, IList<ListedItem> results, CancellationToken token)
+		{
+			if (indexedSearchEngine is null || IsAQSQuery || !IndexedQueryBuilder.IsSupported(Query)
+				|| ZipStorageFolder.IsZipPath(folder) || !indexedSearchEngine.CanSearch(folder))
+				return false;
+
+			var remaining = (int)Math.Min(GetRemainingItemCount(results), maxIndexedResultCount);
+			if (remaining == 0)
+				return true;
+
+			var showDotFiles = UserSettingsService.FoldersSettingsService.ShowDotFiles;
+			var request = new IndexedSearchRequest(
+				Query!,
+				[folder],
+				IncludeHiddenAndSystem: UserSettingsService.FoldersSettingsService.ShowHiddenItems,
+				MaxResults: remaining);
+
+			var added = 0;
+			try
+			{
+				await foreach (var page in indexedSearchEngine.SearchAsync(request, token).ConfigureAwait(false))
+				{
+					foreach (var indexedItem in page)
+					{
+						if (token.IsCancellationRequested)
+							return true;
+
+						if (!showDotFiles && indexedItem.Name.StartsWith('.'))
+							continue;
+
+						AddResult(results, GetListedItem(indexedItem), token);
+						added++;
+					}
+				}
+			}
+			catch (IndexedSearchUnavailableException ex)
+			{
+				logger.LogInformation(ex, "Indexed search unavailable, falling back to the regular search");
+
+				// Once rows are shown, re-running the regular search would duplicate them
+				return added > 0;
+			}
+
+			RaiseSearchTickIfDue(token);
+			return true;
+		}
+
+		private static ListedItem GetListedItem(IndexedSearchItem indexedItem)
+		{
+			var modified = indexedItem.DateModifiedUtc is { } utc ? new DateTimeOffset(utc) : DateTimeOffset.MinValue;
+			if (indexedItem.IsDirectory)
+			{
+				return new ListedItem(null)
+				{
+					PrimaryItemAttribute = StorageItemTypes.Folder,
+					ItemNameRaw = indexedItem.Name,
+					ItemPath = indexedItem.Path,
+					ItemDateModifiedReal = modified,
+					LoadFileIcon = false,
+					ItemType = folderTypeTextLocalized,
+					Opacity = 1,
+				};
+			}
+
+			var extension = indexedItem.Name.Contains('.', StringComparison.Ordinal) ? Path.GetExtension(indexedItem.Name) : null;
+			if (FileExtensionHelpers.IsShortcutOrUrlFile(indexedItem.Name))
+			{
+				var isUrl = FileExtensionHelpers.IsWebLinkFile(indexedItem.Name);
+				return new ShortcutItem(null)
+				{
+					PrimaryItemAttribute = StorageItemTypes.File,
+					FileExtension = extension ?? string.Empty,
+					Opacity = 1,
+					LoadFileIcon = false,
+					ItemNameRaw = indexedItem.Name,
+					ItemDateModifiedReal = modified,
+					ItemType = isUrl ? Strings.ShortcutWebLinkFileType.GetLocalizedResource() : Strings.Shortcut.GetLocalizedResource(),
+					ItemPath = indexedItem.Path,
+					FileSize = indexedItem.Size.ToSizeString(),
+					FileSizeBytes = indexedItem.Size,
+					IsUrl = isUrl,
+				};
+			}
+
+			return new ListedItem(null)
+			{
+				PrimaryItemAttribute = StorageItemTypes.File,
+				ItemNameRaw = indexedItem.Name,
+				ItemPath = indexedItem.Path,
+				ItemDateModifiedReal = modified,
+				LoadFileIcon = false,
+				FileExtension = extension,
+				ItemType = extension is null ? null : extension.Trim('.') + " ",
+				Opacity = 1,
+				FileSize = indexedItem.Size.ToSizeString(),
+				FileSizeBytes = indexedItem.Size,
+			};
 		}
 
 		private static async Task<bool> IsFullyIndexedAsync(BaseStorageFolder folder)
