@@ -159,10 +159,6 @@ elseif ($Branch -eq "SideloadFastSearch")
     $xmlDoc.Package.Applications.Application.VisualElements.Description="Unofficial community fork of Files with instant indexed filename search powered by Find My Files. Not affiliated with the Files team."
     $xmlDoc.Package.Applications.Application.VisualElements.DefaultTile.ShortName="Files FastSearch"
 
-    # No official update feed applies to this package
-    $pm = $xmlDoc.SelectSingleNode("/pkg:Package/pkg:Capabilities/rescap:Capability[@Name='packageManagement']", $nsmgr)
-    $xmlDoc.Package.Capabilities.RemoveChild($pm)
-
     # Update app protocol and execution alias so official Files' links keep opening official Files
     $ap.SetAttribute("Name", "files-fastsearch");
     $ea.SetAttribute("Alias", "files-fastsearch.exe");

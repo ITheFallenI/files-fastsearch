@@ -401,8 +401,8 @@ namespace Files.App.Helpers
 					.AddSingleton<LibraryManager>()
 					.AddSingleton(appModel);
 
-			// Conditional DI; FastSearch must not use the official update feeds, which would replace it with official Files
-			if (AppEnvironment is AppEnvironment.SideloadPreview or AppEnvironment.SideloadStable)
+			// Conditional DI; SideloadUpdateService maps each package name to its own feed, so FastSearch only follows its own releases
+			if (AppEnvironment is AppEnvironment.SideloadPreview or AppEnvironment.SideloadStable or AppEnvironment.SideloadFastSearch)
 				services.AddSingleton<IUpdateService, SideloadUpdateService>();
 			else if (AppEnvironment is AppEnvironment.StorePreview or AppEnvironment.StoreStable)
 				services.AddSingleton<IUpdateService, StoreUpdateService>();

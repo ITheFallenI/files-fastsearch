@@ -294,6 +294,13 @@ namespace Files.App.ViewModels.Settings
 			get => AppLifecycleHelper.AppEnvironment is AppEnvironment.Dev;
 		}
 
+		// Replacing Explorer uses per-user registration and %LocalAppData%\Files shared by every Files install,
+		// so the unofficial FastSearch fork leaves it to official Files rather than taking it over or removing it
+		public bool CanReplaceSystemFileManager
+		{
+			get => AppLifecycleHelper.AppEnvironment is not AppEnvironment.SideloadFastSearch;
+		}
+
 		private FileSavePicker InitializeWithWindow(FileSavePicker obj)
 		{
 			WinRT.Interop.InitializeWithWindow.Initialize(obj, MainWindow.Instance.WindowHandle);

@@ -18,13 +18,15 @@ namespace Files.App.Services
 	{
 		private const string SIDELOAD_STABLE = "https://cdn.files.community/files/stable/Files.Package.appinstaller";
 		private const string SIDELOAD_PREVIEW = "https://cdn.files.community/files/preview/Files.Package.appinstaller";
+		private const string SIDELOAD_FASTSEARCH = "https://github.com/ITheFallenI/files-fastsearch/releases/latest/download/FilesFastSearch.appinstaller";
 
 		private readonly HttpClient _client = new(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(3) });
 
 		private readonly Dictionary<string, string> _sideloadVersion = new()
 		{
 			{ "Files", SIDELOAD_STABLE },
-			{ "FilesPreview", SIDELOAD_PREVIEW }
+			{ "FilesPreview", SIDELOAD_PREVIEW },
+			{ "FilesFastSearch", SIDELOAD_FASTSEARCH }
 		};
 
 		private ILogger? Logger { get; } = Ioc.Default.GetRequiredService<ILogger<App>>();
@@ -139,7 +141,8 @@ namespace Files.App.Services
 				var branchFilePath = Path.Combine(destFolderPath, "Branch.txt");
 
 				// If Files.App.Launcher.exe doesn't exist, no need to update it.
-				if (!File.Exists(destExeFilePath))
+				// FastSearch never registers the shared launcher, so it must not overwrite one that official Files installed.
+				if (!File.Exists(destExeFilePath) || AppLifecycleHelper.AppEnvironment is AppEnvironment.SideloadFastSearch)
 					return;
 
 				// Check if the launcher file is associated with the current branch of the app.
