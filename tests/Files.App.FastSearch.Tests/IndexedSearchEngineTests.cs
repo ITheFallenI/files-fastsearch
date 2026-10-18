@@ -46,6 +46,7 @@ namespace Files.App.FastSearch.Tests
 			Assert.AreEqual(100, first.Size);
 			Assert.AreEqual(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc), first.DateModifiedUtc);
 			Assert.IsTrue(pages[0][1].IsDirectory);
+			await WaitUntilAsync(() => server.Received.Count(r => r.Opcode == EngineContract.Op.Query) == server.Received.Count(r => r.Opcode == EngineContract.Op.ResultFree));
 			Assert.AreEqual(server.Received.Count(r => r.Opcode == EngineContract.Op.Query), server.Received.Count(r => r.Opcode == EngineContract.Op.ResultFree), "every result handle is released");
 		}
 

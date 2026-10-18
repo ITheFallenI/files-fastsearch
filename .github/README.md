@@ -38,11 +38,12 @@ _Screenshots will be added with the first release._
 ## Installing
 
 > [!NOTE]
-> There is no release yet. This section describes how installation will work once the first release is published.
+> The first download is an experimental, self-signed preview for Windows 11 x64 (build 22000 or later). Windows may show an unknown-publisher warning. It has been tested on the maintainer's PC, but not on a clean Windows installation. SignPath signing is not yet approved or configured.
 
-1. Download `FilesFastSearch.msixbundle` from the [latest release](https://github.com/ITheFallenI/files-fastsearch/releases/latest) and open it.
-2. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
-3. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
+1. Download `FilesFastSearch-4.3.1.0-x64-Setup.exe` from the [preview release](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.1.0) and run it. The EXE includes the full MSIX app and Microsoft Windows App Runtime. You can inspect [the installation script](scripts/preview-installer/Install.ps1) first.
+2. Read the certificate prompt. If you trust this project, type `TRUST AND INSTALL`. This adds the preview's public signing certificate to **Current User → Trusted People** and installs the app for your account. It does not add a trusted root. The expected certificate thumbprint is `0BB11DF21C43A636B0A8BEABB9546476DA0543F0`. Press Enter to cancel if you do not wish to trust it. Keep a copy of your settings before testing a preview; the installer also backs up existing FastSearch settings under `%LOCALAPPDATA%\FilesFastSearch\SettingsBackups`.
+3. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
+4. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
 
 Official Files, if installed, is not changed in any way. Files FastSearch does not offer to replace File Explorer, so it never takes over or removes that setting from official Files.
 
@@ -50,6 +51,7 @@ Official Files, if installed, is not changed in any way. Files FastSearch does n
 
 1. In **Settings → Advanced → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
 2. Uninstall Files FastSearch from **Settings → Apps** like any other app.
+3. If you trusted the preview certificate, open `certmgr.msc` → **Trusted People → Certificates**, verify its thumbprint above, and remove that certificate when you no longer need any builds signed with it.
 
 You can also remove the service from an administrator terminal with `fmf-service uninstall --purge-data`.
 
@@ -62,7 +64,7 @@ Files FastSearch (WinUI 3, unelevated)
         └─ original Files search (fallback)
 ```
 
-- `external/find-my-files` is a pinned git submodule of Find My Files. Its engine and service are built unchanged.
+- `external/find-my-files` is a pinned fork of Find My Files with Windows build 22000 sharing and failed-volume recovery fixes.
 - `src/Files.App.FastSearch` compiles Find My Files' own named-pipe client and service-control code straight from the submodule, adding only a small adapter for Files. The client checks that the pipe belongs to the registered service before trusting it, and the service only accepts the user who installed it. See the [Find My Files security model](https://github.com/P4suta/find-my-files/blob/main/docs/SECURITY.md).
 - `src/Files.App/Utils/Storage/Search/FolderSearch.cs` asks the index first and falls back to the original search.
 
@@ -75,7 +77,9 @@ git clone --recurse-submodules https://github.com/ITheFallenI/files-fastsearch
 cd files-fastsearch
 
 # Indexing engine and service
-cargo build --locked --release --manifest-path external/find-my-files/engine/Cargo.toml -p fmf-service
+Push-Location external/find-my-files/engine
+cargo build --locked --release -p fmf-service
+Pop-Location
 
 # Files FastSearch (Dev configuration, installs as "Files - Dev")
 msbuild -restore src/Files.App/Files.App.csproj -p:Configuration=Debug -p:Platform=x64 -v:quiet -clp:ErrorsOnly
