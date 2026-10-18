@@ -31,10 +31,11 @@ try {
     Write-Host "Publisher: $($cert.Subject)"
     Write-Host "Certificate thumbprint: $($cert.Thumbprint)"
     Write-Host ''
-    $trusted = Test-Path -LiteralPath "Cert:\CurrentUser\TrustedPeople\$($cert.Thumbprint)"
+    $trusted = Test-Path -LiteralPath "Cert:\LocalMachine\TrustedPeople\$($cert.Thumbprint)"
     if (-not $trusted) {
-        Write-Host 'Continuing adds this public signing certificate to YOUR ACCOUNT > Trusted People.'
-        Write-Host 'This trusts software signed with this certificate for your account. No root certificate is added.'
+        Write-Host 'Continuing adds this public signing certificate to LOCAL COMPUTER > Trusted People.'
+        Write-Host 'This trusts software signed with this certificate for ALL USERS. No root certificate is added.'
+        Write-Host 'Windows will request administrator approval for that certificate change.'
         Write-Host 'Only continue if you trust this project. Type TRUST AND INSTALL to agree, or press Enter to cancel.'
         if ((Read-Host 'Choice') -cne 'TRUST AND INSTALL') { Write-Host 'Cancelled.'; exit 0 }
     } elseif ((Read-Host 'Type INSTALL to continue, or press Enter to cancel') -cne 'INSTALL') {
@@ -58,7 +59,23 @@ try {
         Write-Host "Settings backup: $backup"
     }
     if (-not $trusted) {
-        Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\TrustedPeople | Out-Null
+        $encodedCert = [Convert]::ToBase64String($cert.RawData)
+        $trustCommand = @"
+`$ErrorActionPreference = 'Stop'
+try {
+    `$cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new([Convert]::FromBase64String('$encodedCert'))
+    if (`$cert.Thumbprint -ne '$($cert.Thumbprint)' -or `$cert.HasPrivateKey) { exit 1 }
+    `$store = [Security.Cryptography.X509Certificates.X509Store]::new('TrustedPeople', 'LocalMachine')
+    try { `$store.Open('ReadWrite'); `$store.Add(`$cert) } finally { `$store.Close() }
+    exit 0
+} catch { exit 1 }
+"@
+        $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($trustCommand))
+        $process = Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" `
+            -Verb RunAs -WindowStyle Hidden -ArgumentList @('-NoProfile', '-NonInteractive', '-EncodedCommand', $encodedCommand) -Wait -PassThru
+        if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath "Cert:\LocalMachine\TrustedPeople\$($cert.Thumbprint)")) {
+            throw 'Certificate trust was not approved or could not be installed. App installation has stopped.'
+        }
     }
     Add-AppxPackage -Path (Join-Path $PSScriptRoot 'FilesFastSearch.msix') `
         -DependencyPath (Join-Path $PSScriptRoot 'Microsoft.WindowsAppRuntime.2.msix') -ForceApplicationShutdown
@@ -68,7 +85,7 @@ try {
     }
     Write-Host 'Installed. Open Files FastSearch from the Start menu.' -ForegroundColor Green
     Write-Host 'To uninstall, use Windows Settings > Apps. Remove the indexing service in the app first.'
-    Write-Host "To remove certificate trust later: certmgr.msc > Trusted People > Certificates > $($cert.Subject)."
+    Write-Host "To remove certificate trust later: certlm.msc > Trusted People > Certificates > $($cert.Subject)."
     [void](Read-Host 'Press Enter to finish')
     exit 0
 } catch {

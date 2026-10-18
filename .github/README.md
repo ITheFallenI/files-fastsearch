@@ -41,7 +41,7 @@ _Screenshots will be added with the first release._
 > The first download is an experimental, self-signed preview for Windows 11 x64 (build 22000 or later). Windows may show an unknown-publisher warning. It has been tested on the maintainer's PC, but not on a clean Windows installation. SignPath signing is not yet approved or configured.
 
 1. Download `FilesFastSearch-4.3.1.0-x64-Setup.exe` from the [preview release](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.1.0) and run it. The EXE includes the full MSIX app and Microsoft Windows App Runtime. You can inspect [the installation script](scripts/preview-installer/Install.ps1) first.
-2. Read the certificate prompt. If you trust this project, type `TRUST AND INSTALL`. This adds the preview's public signing certificate to **Current User → Trusted People** and installs the app for your account. It does not add a trusted root. The expected certificate thumbprint is `0BB11DF21C43A636B0A8BEABB9546476DA0543F0`. Press Enter to cancel if you do not wish to trust it. Keep a copy of your settings before testing a preview; the installer also backs up existing FastSearch settings under `%LOCALAPPDATA%\FilesFastSearch\SettingsBackups`.
+2. Read the certificate prompt. If you trust this project, type `TRUST AND INSTALL` and approve the Windows administrator prompt. This adds the preview's public signing certificate to **Local Computer → Trusted People**, trusting that signing certificate for all users, then installs the app for your account. It does not add a trusted root. The expected certificate thumbprint is `0BB11DF21C43A636B0A8BEABB9546476DA0543F0`. Press Enter to cancel if you do not wish to trust it. Keep a copy of your settings before testing a preview; the installer also backs up existing FastSearch settings under `%LOCALAPPDATA%\FilesFastSearch\SettingsBackups`.
 3. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
 4. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
 
@@ -51,7 +51,7 @@ Official Files, if installed, is not changed in any way. Files FastSearch does n
 
 1. In **Settings → Advanced → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
 2. Uninstall Files FastSearch from **Settings → Apps** like any other app.
-3. If you trusted the preview certificate, open `certmgr.msc` → **Trusted People → Certificates**, verify its thumbprint above, and remove that certificate when you no longer need any builds signed with it.
+3. If you trusted the preview certificate, open `certlm.msc` → **Trusted People → Certificates**, verify its thumbprint above, and remove that certificate when you no longer need any builds signed with it. This needs administrator approval.
 
 You can also remove the service from an administrator terminal with `fmf-service uninstall --purge-data`.
 
