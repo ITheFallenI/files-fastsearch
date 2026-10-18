@@ -533,6 +533,31 @@ namespace Files.App.Utils.Storage
 		}
 
 		/// <summary>
+		/// Gets whether <paramref name="folder"/> or one of its parent folders, below the drive root, is hidden or a system folder.
+		/// </summary>
+		/// <remarks>
+		/// The index leaves out everything below such a folder unless hidden items are requested, while Files only hides
+		/// items that carry the attribute themselves, so searches inside one (such as AppData) use the regular search.
+		/// </remarks>
+		private static bool IsInsideHiddenOrSystemFolder(string folder)
+		{
+			try
+			{
+				for (var directory = new DirectoryInfo(folder); directory.Parent is not null; directory = directory.Parent)
+				{
+					if ((directory.Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0)
+						return true;
+				}
+
+				return false;
+			}
+			catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+			{
+				return true;
+			}
+		}
+
+		/// <summary>
 		/// Answers the search from the Find My Files index when it covers the folder's drive and the query is plain filename syntax.
 		/// </summary>
 		/// <returns>False when the regular search should run instead.</returns>
@@ -540,6 +565,10 @@ namespace Files.App.Utils.Storage
 		{
 			if (indexedSearchEngine is null || IsAQSQuery || !IndexedQueryBuilder.IsSupported(Query)
 				|| ZipStorageFolder.IsZipPath(folder) || !indexedSearchEngine.CanSearch(folder))
+				return false;
+
+			var showHiddenItems = UserSettingsService.FoldersSettingsService.ShowHiddenItems;
+			if (!showHiddenItems && IsInsideHiddenOrSystemFolder(folder))
 				return false;
 
 			var remaining = (int)Math.Min(GetRemainingItemCount(results), maxIndexedResultCount);
@@ -550,7 +579,7 @@ namespace Files.App.Utils.Storage
 			var request = new IndexedSearchRequest(
 				Query!,
 				[folder],
-				IncludeHiddenAndSystem: UserSettingsService.FoldersSettingsService.ShowHiddenItems,
+				IncludeHiddenAndSystem: showHiddenItems,
 				MaxResults: remaining);
 
 			var added = 0;
