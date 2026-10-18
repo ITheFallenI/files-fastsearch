@@ -27,6 +27,9 @@
         <virtualization:RegistryWriteVirtualization>
             <virtualization:ExcludedKeys>
                 <virtualization:ExcludedKey>HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\CLSID\{645FF040-5081-101B-9F08-00AA002F954E}\DefaultIcon</virtualization:ExcludedKey>
+                <virtualization:ExcludedKey>HKEY_CURRENT_USER\Software\Classes\Folder\shell\open\command</virtualization:ExcludedKey>
+                <virtualization:ExcludedKey>HKEY_CURRENT_USER\Software\Classes\Folder\shell\explore\command</virtualization:ExcludedKey>
+                <virtualization:ExcludedKey>HKEY_CURRENT_USER\Software\Classes\CLSID\{52205fd8-5dfb-447d-801a-d0b52f2e83e1}\shell\opennewwindow\command</virtualization:ExcludedKey>
             </virtualization:ExcludedKeys>
         </virtualization:RegistryWriteVirtualization>
     </Properties>
@@ -191,7 +194,7 @@
         <rescap:Capability Name="broadFileSystemAccess" />
         <rescap:Capability Name="allowElevation" />
         <!--
-            The unvirtualizedResources capability supports AppData file operations and shared Recycle Bin icon state.
+            The unvirtualizedResources capability supports AppData operations, the Recycle Bin icon, and opt-in folder-opening registration.
         -->
         <rescap:Capability Name="unvirtualizedResources" />
         <!--
