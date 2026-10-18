@@ -84,7 +84,7 @@ msbuild -restore src/Files.App/Files.App.csproj -p:Configuration=Debug -p:Platfo
 dotnet run --project tests/Files.App.FastSearch.Tests -p:Platform=x64
 ```
 
-Deploy and debug the **Files.App** project from Visual Studio as usual. Development builds use the upstream "Files - Dev" identity, which also installs beside official Files.
+Run `.github/scripts/Deploy-DevPackage.ps1` to build and install "Files - Dev": it stages the files that only MSIX packaging adds (Files.App.Server, Assets) into the output folder, which a Visual Studio deploy of Files.App otherwise starts without. After that, debug **Files.App** from Visual Studio as usual. Development builds use the upstream "Files - Dev" identity, which also installs beside official Files.
 
 ### Updating from upstream
 
