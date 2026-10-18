@@ -190,12 +190,13 @@
     <PropertyGroup>
         <FindMyFilesRoot>$(MSBuildThisFileDirectory)..\..\external\find-my-files\</FindMyFilesRoot>
     </PropertyGroup>
-    <Target Name="BuildFindMyFilesService" BeforeTargets="BeforeBuild" Condition="'$(SkipRustBuild)' != 'true' and '$(Platform)' == 'x64'">
-        <Exec Command="cargo build --locked --release -p fmf-service" WorkingDirectory="$(FindMyFilesRoot)engine" />
+    <Target Name="BuildFindMyFilesService" BeforeTargets="BeforeBuild" Condition="'$(Platform)' == 'x64'">
+        <Exec Condition="'$(SkipRustBuild)' != 'true'" Command="cargo build --locked --release -p fmf-service" WorkingDirectory="$(FindMyFilesRoot)engine" />
+        <Warning Condition="!Exists('$(FindMyFilesRoot)build\engine\release\fmf-service.exe')" Text="fmf-service.exe was not built, so this package can't install the indexing service." />
+        <ItemGroup Condition="Exists('$(FindMyFilesRoot)build\engine\release\fmf-service.exe')">
+            <Content Include="$(FindMyFilesRoot)build\engine\release\fmf-service.exe" Link="fmf-service.exe" CopyToOutputDirectory="PreserveNewest" />
+        </ItemGroup>
     </Target>
-    <ItemGroup Condition="'$(Platform)' == 'x64'">
-        <Content Include="$(FindMyFilesRoot)build\engine\release\fmf-service.exe" Link="fmf-service.exe" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
     <ItemGroup>
         <Content Include="$(FindMyFilesRoot)LICENSE" Link="Licenses\find-my-files-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
