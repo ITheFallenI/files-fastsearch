@@ -34,6 +34,11 @@ namespace Files.App.Data.Enums
 		/// <summary>
 		/// Application distribution type is Store Preview.
 		/// </summary>
-		StorePreview
+		StorePreview,
+
+		/// <summary>
+		/// Application distribution type is the unofficial Files FastSearch sideload release.
+		/// </summary>
+		SideloadFastSearch
 	}
 }

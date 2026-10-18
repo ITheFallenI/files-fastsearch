@@ -149,9 +149,42 @@ elseif ($Branch -eq "StoreStable")
     }
 
 }
+elseif ($Branch -eq "SideloadFastSearch")
+{
+    # Unofficial fork: its own package identity, so it installs beside any official Files package and keeps its own settings
+    $xmlDoc.Package.Identity.Name="FilesFastSearch"
+    $xmlDoc.Package.Properties.DisplayName="Files FastSearch (Unofficial)"
+    $xmlDoc.Package.Properties.PublisherDisplayName="Files FastSearch contributors"
+    $xmlDoc.Package.Applications.Application.VisualElements.DisplayName="Files FastSearch"
+    $xmlDoc.Package.Applications.Application.VisualElements.Description="Unofficial community fork of Files with instant indexed filename search powered by Find My Files. Not affiliated with the Files team."
+    $xmlDoc.Package.Applications.Application.VisualElements.DefaultTile.ShortName="Files FastSearch"
+
+    # No official update feed applies to this package
+    $pm = $xmlDoc.SelectSingleNode("/pkg:Package/pkg:Capabilities/rescap:Capability[@Name='packageManagement']", $nsmgr)
+    $xmlDoc.Package.Capabilities.RemoveChild($pm)
+
+    # Update app protocol and execution alias so official Files' links keep opening official Files
+    $ap.SetAttribute("Name", "files-fastsearch");
+    $ea.SetAttribute("Alias", "files-fastsearch.exe");
+
+    # Save modified Package.appxmanifest
+    $xmlDoc.Save($PackageManifestPath)
+
+    Get-ChildItem $WorkingDir -Include *.csproj, *.appxmanifest, *.xaml -recurse | ForEach-Object -Process `
+    { `
+        (Get-Content $_ -Raw | ForEach-Object -Process { $_ -replace "Assets\\AppTiles\\Dev", "Assets\AppTiles\Release" }) | `
+        Set-Content $_ -NoNewline `
+    }
+
+    Get-ChildItem $WorkingDir -Include *.cs, *.cpp -recurse | ForEach-Object -Process `
+    { `
+        (Get-Content $_ -Raw | ForEach-Object -Process { $_ -replace "files-dev", "files-fastsearch" }) | `
+        Set-Content $_ -NoNewline `
+    }
+}
 
 # Remove unused tile assets so they don't end up in the package
-$keepTiles = if ($Branch -match 'Preview') { 'Preview' } elseif ($Branch -match 'Stable') { 'Release' } else { $null }
+$keepTiles = if ($Branch -match 'Preview') { 'Preview' } elseif ($Branch -match 'Stable|FastSearch') { 'Release' } else { $null }
 foreach ($folder in @('Dev', 'Preview', 'Release')) {
     if ($folder -eq $keepTiles) { continue }
     $tilePath = Join-Path $WorkingDir "src\Files.App\Assets\AppTiles\$folder"

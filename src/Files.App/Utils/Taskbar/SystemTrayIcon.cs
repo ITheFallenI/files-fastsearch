@@ -36,6 +36,7 @@ namespace Files.App.Utils.Taskbar
 			AppEnvironment.StorePreview => new Guid("684F2832-AC2B-4630-98C2-73D6AEBD4003"),
 			AppEnvironment.SideloadStable => new Guid("684F2832-AC2B-4630-98C2-73D6AEBD4004"),
 			AppEnvironment.StoreStable => new Guid("684F2832-AC2B-4630-98C2-73D6AEBD4005"),
+			AppEnvironment.SideloadFastSearch => new Guid("C1503D71-A98F-43FA-B43B-7ADDE4496A8C"),
 			_ => new Guid("684F2832-AC2B-4630-98C2-73D6AEBD4001")
 		};
 

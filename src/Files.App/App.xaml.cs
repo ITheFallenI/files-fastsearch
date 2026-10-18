@@ -171,8 +171,8 @@ namespace Files.App
 
 				await commandsWarmupTask;
 
-				// Configure Sentry
-				if (AppLifecycleHelper.AppEnvironment is not AppEnvironment.Dev)
+				// Configure Sentry; the FastSearch fork must never report to the official Files project
+				if (AppLifecycleHelper.AppEnvironment is not (AppEnvironment.Dev or AppEnvironment.SideloadFastSearch))
 					AppLifecycleHelper.ConfigureSentry();
 
 				// TODO: Replace with DI

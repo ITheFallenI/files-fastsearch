@@ -16,6 +16,7 @@ namespace Files.App.Views
 			{
 				AppEnvironment.Dev => "Dev",
 				AppEnvironment.SideloadPreview or AppEnvironment.StorePreview => "Preview",
+				AppEnvironment.SideloadFastSearch => "FastSearch",
 				_ => string.Empty,
 			};
 

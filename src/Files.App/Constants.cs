@@ -253,6 +253,7 @@ namespace Files.App
 				"FilesPreview", // sideload preview
 				"49306atecsolution.FilesPreview", // store preview
 				"FilesDev", // dev
+				"FilesFastSearch", // unofficial FastSearch fork
 			};
 		}
 
