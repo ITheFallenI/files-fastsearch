@@ -45,6 +45,10 @@ namespace Files.App.ViewModels.Settings
 		public bool CanRemove
 			=> !IsBusy && IndexingServiceManager.CanManageService && status is IndexingServiceStatus.Running or IndexingServiceStatus.Stopped or IndexingServiceStatus.NeedsUpdate;
 
+		// Once the service is set up, removing it is the only action, so the turn-on button goes away instead of greying out
+		public bool IsTurnOnVisible
+			=> status is not (IndexingServiceStatus.Running or IndexingServiceStatus.Stopped);
+
 		public string TurnOnText
 			=> status is IndexingServiceStatus.NeedsUpdate ? Strings.FastSearchUpdateService.GetLocalizedResource() : Strings.FastSearchTurnOn.GetLocalizedResource();
 
@@ -100,6 +104,7 @@ namespace Files.App.ViewModels.Settings
 		{
 			OnPropertyChanged(nameof(CanTurnOn));
 			OnPropertyChanged(nameof(CanRemove));
+			OnPropertyChanged(nameof(IsTurnOnVisible));
 			OnPropertyChanged(nameof(TurnOnText));
 		}
 	}

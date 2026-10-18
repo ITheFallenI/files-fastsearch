@@ -131,7 +131,8 @@
 					Command="{x:Bind ViewModel.FastSearch.TurnOnCommand}"
 					Content="{x:Bind ViewModel.FastSearch.TurnOnText, Mode=OneWay}"
 					IsEnabled="{x:Bind ViewModel.FastSearch.CanTurnOn, Mode=OneWay}"
-					Style="{StaticResource AccentButtonStyle}" />
+					Style="{StaticResource AccentButtonStyle}"
+					Visibility="{x:Bind ViewModel.FastSearch.IsTurnOnVisible, Mode=OneWay}" />
 				<wctcontrols:SettingsExpander.Items>
 					<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=FastSearchRemoveDescription}" Header="{helpers:ResourceString Name=FastSearchRemove}">
 						<StackPanel Orientation="Horizontal" Spacing="12">
