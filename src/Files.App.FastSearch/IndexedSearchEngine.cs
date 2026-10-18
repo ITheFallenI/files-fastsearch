@@ -27,6 +27,11 @@ namespace Files.App.FastSearch
 		void EnsureStarted();
 
 		/// <summary>
+		/// Closes the connection to the indexing service until <see cref="EnsureStarted"/> is called again.
+		/// </summary>
+		void Disconnect();
+
+		/// <summary>
 		/// Gets whether the index is connected and has a completed index for the drive of <paramref name="path"/>.
 		/// </summary>
 		bool CanSearch(string path);
@@ -92,6 +97,12 @@ namespace Files.App.FastSearch
 			}
 
 			RequestServiceStart();
+		}
+
+		public void Disconnect()
+		{
+			lock (gate)
+				DetachClient();
 		}
 
 		public bool CanSearch(string path)

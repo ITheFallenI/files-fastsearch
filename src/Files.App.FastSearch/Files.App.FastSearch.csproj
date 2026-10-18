@@ -45,8 +45,20 @@
         <Compile Include="$(FindMyFilesServiceSources)ServiceSetup.cs;$(FindMyFilesServiceSources)ServiceSetupHooks.cs;$(FindMyFilesServiceSources)ServiceSetupNative.cs;$(FindMyFilesServiceSources)ServiceExecutableTrust.cs;$(FindMyFilesServiceSources)TrustedServiceExecutable.cs;$(FindMyFilesServiceSources)ServiceActionResult.cs;$(FindMyFilesServiceSources)ServiceActionOutcome.cs;$(FindMyFilesServiceSources)IElevatedProcess.cs;$(FindMyFilesServiceSources)IServiceHandle.cs;$(FindMyFilesServiceSources)IServiceManagerHandle.cs;$(FindMyFilesServiceSources)EngineServiceState.cs" Link="FindMyFiles\Services\%(Filename)%(Extension)" />
     </ItemGroup>
 
+    <PropertyGroup>
+        <!--
+            Authenticode-stable image digest of the bundled fmf-service.exe, computed by the release workflow before signing.
+            Unpinned builds can still use an installed service but refuse to start the bundled one elevated.
+        -->
+        <FmfServiceImageSha256 Condition="'$(FmfServiceImageSha256)' == ''">UNPINNED</FmfServiceImageSha256>
+    </PropertyGroup>
+
     <ItemGroup>
         <InternalsVisibleTo Include="Files.App.FastSearch.Tests" />
+        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+            <_Parameter1>FmfServiceImageSha256</_Parameter1>
+            <_Parameter2>$(FmfServiceImageSha256)</_Parameter2>
+        </AssemblyAttribute>
     </ItemGroup>
 
     <ItemGroup>
