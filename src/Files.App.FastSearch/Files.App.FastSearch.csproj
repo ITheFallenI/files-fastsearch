@@ -1,0 +1,56 @@
+<!--  Copyright (c) Files Community. Licensed under the MIT License.  -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsTrimmable>true</IsTrimmable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>x86;x64;arm64</Platforms>
+        <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!--
+            IL2026/IL3050: the linked Find My Files sources pass EngineJson.SnakeCase, whose options are
+            EngineJsonContext.Default.Options (source-generated), so every serialized type has static metadata.
+        -->
+        <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+        <FindMyFilesRoot>$(MSBuildThisFileDirectory)..\..\external\find-my-files\</FindMyFilesRoot>
+        <FindMyFilesEngineSources>$(FindMyFilesRoot)app\FindMyFiles\Engine\</FindMyFilesEngineSources>
+        <FindMyFilesServiceSources>$(FindMyFilesRoot)app\FindMyFiles\Services\</FindMyFilesServiceSources>
+    </PropertyGroup>
+
+    <!--
+        The Find My Files named-pipe client is compiled from the pinned submodule, not copied,
+        so protocol and security fixes arrive with a submodule bump. Only the service transport
+        is used: the in-process FFI engine needs elevation and the fake engine is test-only.
+    -->
+    <ItemGroup>
+        <Compile Include="$(FindMyFilesEngineSources)**\*.cs" Link="FindMyFiles\Engine\%(RecursiveDir)%(Filename)%(Extension)" />
+        <Compile Remove="$(FindMyFilesEngineSources)FakeEngineClient.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)NativeEngine.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)Transport\FfiEngineClient.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)Transport\FfiSearchResult.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)EngineClientFactory.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)EngineClientFactoryHooks.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)ResolvingEngineClient.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)UnavailableEngineClient.cs" />
+        <Compile Remove="$(FindMyFilesEngineSources)EngineEventMarshaler.cs" />
+    </ItemGroup>
+
+    <!--  Unelevated start of the installed on-demand service, and its SCM identity used by the pipe's anti-squatting check.  -->
+    <ItemGroup>
+        <Compile Include="$(FindMyFilesServiceSources)ServiceSetup.cs;$(FindMyFilesServiceSources)ServiceSetupHooks.cs;$(FindMyFilesServiceSources)ServiceSetupNative.cs;$(FindMyFilesServiceSources)ServiceExecutableTrust.cs;$(FindMyFilesServiceSources)TrustedServiceExecutable.cs;$(FindMyFilesServiceSources)ServiceActionResult.cs;$(FindMyFilesServiceSources)ServiceActionOutcome.cs;$(FindMyFilesServiceSources)IElevatedProcess.cs;$(FindMyFilesServiceSources)IServiceHandle.cs;$(FindMyFilesServiceSources)IServiceManagerHandle.cs;$(FindMyFilesServiceSources)EngineServiceState.cs" Link="FindMyFiles\Services\%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Files.App.FastSearch.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Logging" />
+    </ItemGroup>
+
+</Project>

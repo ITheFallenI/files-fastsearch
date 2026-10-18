@@ -1,0 +1,30 @@
+<!--  Copyright (c) Files Community. Licensed under the MIT License.  -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>x86;x64;arm64</Platforms>
+        <OutputType>Exe</OutputType>
+        <NoWarn>$(NoWarn);CA1416</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!--  Find My Files' own in-test named pipe server, speaking the real wire protocol  -->
+        <Compile Include="..\..\external\find-my-files\app\FindMyFiles.Tests\TestDoubles\FakePipeServer.cs" Link="FindMyFiles\FakePipeServer.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MSTest.TestAdapter" />
+        <PackageReference Include="MSTest.TestFramework" />
+        <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Files.App.FastSearch\Files.App.FastSearch.csproj" />
+    </ItemGroup>
+
+</Project>
