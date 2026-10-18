@@ -4,6 +4,21 @@ Files uses third-party libraries and resources that may be distributed under lic
 In the event that we accidentally failed to list a required notice, please bring it to our attention by opening an issue.
 
 
+## Files FastSearch
+
+Files FastSearch is an unofficial fork of Files (MIT License, with some files under MPL-2.0; see LICENSE-MIT and LICENSE-MPL). Changes made in this fork are released under the same licences.
+
+## Find My Files
+
+**Source**: [https://github.com/P4suta/find-my-files](https://github.com/P4suta/find-my-files)
+
+Included unmodified as the `external/find-my-files` git submodule. Files FastSearch ships its `fmf-service` indexing service and compiles its C# named-pipe client and service-control sources (`app/FindMyFiles/Engine`, `app/FindMyFiles/Services`) into `Files.App.FastSearch`.
+
+### License
+
+Apache License, Version 2.0. The full text is in `external/find-my-files/LICENSE` and is included in release packages as `Licenses\find-my-files-LICENSE.txt`. The Rust crates compiled into `fmf-service.exe` are listed with their licences in `Licenses\fmf-service-THIRD-PARTY.html`, generated at release time with `cargo about` from `external/find-my-files/engine/about.toml`.
+
+
 ## 7-Zip
 
 **Source**: [https://sourceforge.net/projects/sevenzip/](https://sourceforge.net/projects/sevenzip/)
