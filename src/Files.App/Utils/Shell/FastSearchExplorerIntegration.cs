@@ -3,6 +3,7 @@
 
 using Microsoft.Win32;
 using System.IO;
+using System.Security.Principal;
 using Windows.ApplicationModel;
 
 namespace Files.App.Utils.Shell;
@@ -11,18 +12,12 @@ internal static class FastSearchExplorerIntegration
 {
 	private static string StateDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FilesFastSearch", "ShellIntegration");
 	private static string LauncherPath => Path.Combine(StateDirectory, "Files.FastSearch.Launcher.exe");
-	private static readonly string[] CommandKeys =
-	[
-		@"Software\Classes\Folder\shell\open\command",
-		@"Software\Classes\Folder\shell\explore\command",
-		@"Software\Classes\CLSID\{52205fd8-5dfb-447d-801a-d0b52f2e83e1}\shell\opennewwindow\command",
-	];
 
 	internal static bool IsEnabled()
 	{
-		for (var i = 0; i < CommandKeys.Length; i++)
+		for (var i = 0; i < ExplorerRegistrationBackup.CommandKeys.Length; i++)
 		{
-			using var key = Registry.CurrentUser.OpenSubKey(CommandKeys[i]);
+			using var key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\" + ExplorerRegistrationBackup.CommandKeys[i]);
 			var expected = $"\"{LauncherPath}\"" + (i < 2 ? " \"%1\"" : string.Empty);
 			if (string.Equals(key?.GetValue(string.Empty) as string, expected, StringComparison.OrdinalIgnoreCase))
 				return true;
@@ -32,21 +27,31 @@ internal static class FastSearchExplorerIntegration
 
 	internal static async Task<bool> SetEnabledAsync(bool enabled)
 	{
+		var source = Path.Combine(Package.Current.InstalledLocation.Path, "Assets", "FilesOpenDialog", "Files.App.Launcher.exe");
 		if (enabled)
 		{
-			var source = Path.Combine(Package.Current.InstalledLocation.Path, "Assets", "FilesOpenDialog");
 			Directory.CreateDirectory(StateDirectory);
-			File.Copy(Path.Combine(source, "Files.App.Launcher.exe"), LauncherPath, true);
-			File.Copy(Path.Combine(source, "RestoreFastSearchExplorer.ps1"), Path.Combine(StateDirectory, "RestoreFastSearchExplorer.ps1"), true);
+			File.Copy(source, LauncherPath, true);
+			if (!IsEnabled())
+			{
+				var history = Path.Combine(StateDirectory, "Backups");
+				Directory.CreateDirectory(history);
+				var archive = Path.Combine(history, $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.bin");
+				using var classes = Registry.CurrentUser.OpenSubKey(@"Software\Classes")!;
+				ExplorerRegistrationBackup.Save(classes, archive);
+				File.Copy(archive, Path.Combine(StateDirectory, "ExplorerRegistrationBackup.bin"), true);
+			}
 		}
 
-		var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe"))
+		// Run the protected package copy elevated, never a helper from a user-writable directory.
+		var start = new ProcessStartInfo(source)
 		{
-			UseShellExecute = false,
-			CreateNoWindow = true,
+			UseShellExecute = true,
+			Verb = "runas",
+			WindowStyle = ProcessWindowStyle.Hidden,
 		};
-		foreach (var argument in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(StateDirectory, "RestoreFastSearchExplorer.ps1"), "-Action", enabled ? "Enable" : "Restore" })
-			start.ArgumentList.Add(argument);
+		start.ArgumentList.Add(enabled ? "--set-default-fastsearch" : "--restore-fastsearch");
+		start.ArgumentList.Add(WindowsIdentity.GetCurrent().User!.Value);
 		using var process = Process.Start(start);
 		if (process is null)
 			return false;

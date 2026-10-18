@@ -59,11 +59,16 @@ namespace Files.App.ViewModels.Settings
 				try
 				{
 					if (IsSetAsDefaultFileManager != FastSearchExplorerIntegration.IsEnabled())
-						await FastSearchExplorerIntegration.SetEnabledAsync(IsSetAsDefaultFileManager);
+					{
+						if (!await FastSearchExplorerIntegration.SetEnabledAsync(IsSetAsDefaultFileManager))
+							throw new InvalidOperationException("Windows did not apply the Explorer registration change.");
+					}
 				}
+				catch (System.ComponentModel.Win32Exception exception) when (exception.NativeErrorCode == 1223) { }
 				catch (Exception exception)
 				{
 					App.Logger.LogError(exception, "Could not update FastSearch Explorer registration");
+					await DialogDisplayHelper.ShowDialogAsync("FastSearchExplorerErrorTitle".GetLocalizedResource(), "FastSearchExplorerErrorDescription".GetLocalizedResource());
 				}
 				IsSetAsDefaultFileManager = FastSearchExplorerIntegration.IsEnabled();
 				return;

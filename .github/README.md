@@ -47,12 +47,12 @@ _Screenshots will be added with the first release._
 3. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
 4. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
 
-Installing FastSearch leaves your default file manager unchanged. To open folders and **Win + E** in FastSearch, enable **Settings → Advanced → Experimental feature flags → Set Files as the default file manager**. This optional setting applies to your Windows account. It backs up the previous folder-opening commands and keeps its launcher under `%LOCALAPPDATA%\FilesFastSearch\ShellIntegration`, separate from official Files.
+Installing FastSearch leaves your default file manager unchanged. To open folders and **Win + E** in FastSearch, enable **Settings → Advanced → Experimental feature flags → Set Files as the default file manager**. This optional setting applies to your Windows account and asks for Windows administrator approval using your current account. It backs up the previous folder-opening commands and keeps its signed native launcher under `%LOCALAPPDATA%\FilesFastSearch\ShellIntegration`, separate from official Files.
 
 Turn the toggle off to restore the previous handler (normally Explorer). Restoration only changes registrations still owned by FastSearch; a newer choice of file manager is preserved. Backups remain in the `Backups` folder beside the launcher. If the app is uninstalled while enabled, the retained launcher restores the previous registration on the next folder launch. A manual recovery command is also available:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\FilesFastSearch\ShellIntegration\RestoreFastSearchExplorer.ps1" -Action Restore
+& "$env:LOCALAPPDATA\FilesFastSearch\ShellIntegration\Files.FastSearch.Launcher.exe" --restore-fastsearch
 ```
 
 Open/Save dialogs keep their existing Windows behaviour. Special shell locations can still open in Explorer.

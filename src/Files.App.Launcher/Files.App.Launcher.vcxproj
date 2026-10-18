@@ -127,6 +127,7 @@
     <ClCompile Include="FilesLauncher.cpp" />
     <ClCompile Include="OpenInFolder.cpp" />
     <ClInclude Include="OpenInFolder.h" />
+    <ClInclude Include="FastSearchExplorerRegistration.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

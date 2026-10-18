@@ -117,7 +117,9 @@ jobs:
     - name: Test Explorer registration backup and restore
       shell: pwsh
       run: |
-        & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File tests\Test-FastSearchExplorerIntegration.ps1
+        msbuild tests\Files.App.ShellIntegration.Tests\NativeTests.vcxproj -p:Platform=x64 -p:Configuration=Release -v:quiet -clp:ErrorsOnly
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        dotnet run --project tests\Files.App.ShellIntegration.Tests\Files.App.ShellIntegration.Tests.csproj
 
     - name: Restore and build the launcher
       shell: pwsh
