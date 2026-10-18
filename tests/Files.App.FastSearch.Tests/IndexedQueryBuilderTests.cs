@@ -8,7 +8,7 @@ namespace Files.App.FastSearch.Tests
 	[TestClass]
 	public sealed class IndexedQueryBuilderTests
 	{
-		[DataTestMethod]
+		[TestMethod]
 		[DataRow("report", true)]
 		[DataRow("my report | notes", true)]
 		[DataRow("", false)]
@@ -19,7 +19,7 @@ namespace Files.App.FastSearch.Tests
 		public void IsSupported_RoutesFilesOnlySyntaxToTheRegularSearch(string query, bool expected)
 			=> Assert.AreEqual(expected, IndexedQueryBuilder.IsSupported(query));
 
-		[DataTestMethod]
+		[TestMethod]
 		[DataRow(@"C:\Users", "C:")]
 		[DataRow(@"d:\", "D:")]
 		[DataRow("e:", "E:")]
@@ -30,7 +30,7 @@ namespace Files.App.FastSearch.Tests
 		public void GetVolumeLabel_AcceptsOnlyLocalDrivePaths(string path, string? expected)
 			=> Assert.AreEqual(expected, IndexedQueryBuilder.GetVolumeLabel(path));
 
-		[DataTestMethod]
+		[TestMethod]
 		[DataRow(@"C:\Users\Me", @"C:\Users\Me\")]
 		[DataRow(@"c:\Users\Me\\", @"C:\Users\Me\")]
 		[DataRow(@"C:/Users/Me", @"C:\Users\Me\")]
