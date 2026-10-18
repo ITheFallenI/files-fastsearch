@@ -38,6 +38,11 @@
       <Platform Solution="*|x64" Project="x64" />
       <Platform Solution="*|x86" Project="x86" />
     </Project>
+    <Project Path="src/Files.App.FastSearch/Files.App.FastSearch.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
     <Project Path="src/Files.App.Launcher/Files.App.Launcher.vcxproj" Id="25fd5045-6d4c-4dd0-b3ac-613ab59cbb07" />
     <Project Path="src/Files.App.OpenDialog/Files.App.OpenDialog.vcxproj" Id="a2ff3f3b-8ebc-4108-b99d-1476b7876656" />
     <Project Path="src/Files.App.OpenDialog/Files.App.OpenDialog.Win32.vcxproj" Id="b3fe3f3b-cecc-4918-b72b-5488c3774125">
@@ -72,6 +77,11 @@
     </Project>
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Files.App.FastSearch.Tests/Files.App.FastSearch.Tests.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
     <Project Path="tests/Files.App.UITests/Files.App.UITests.csproj">
       <Platform Solution="*|arm64" Project="arm64" />
       <Platform Solution="*|x64" Project="x64" />
