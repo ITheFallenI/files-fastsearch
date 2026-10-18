@@ -4743,4 +4743,46 @@
   <data name="SearchForQuery" xml:space="preserve">
     <value>Search for `{0}`</value>
   </data>
+  <data name="FastSearch" xml:space="preserve">
+    <value>Fast search</value>
+  </data>
+  <data name="FastSearchIndexingService" xml:space="preserve">
+    <value>Indexing service</value>
+  </data>
+  <data name="FastSearchTurnOn" xml:space="preserve">
+    <value>Turn on fast search</value>
+  </data>
+  <data name="FastSearchUpdateService" xml:space="preserve">
+    <value>Update indexing service</value>
+  </data>
+  <data name="FastSearchRemove" xml:space="preserve">
+    <value>Remove indexing service</value>
+  </data>
+  <data name="FastSearchRemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="FastSearchRemoveDescription" xml:space="preserve">
+    <value>Searches go back to the regular Files search. Windows asks for administrator approval.</value>
+  </data>
+  <data name="FastSearchDeleteIndex" xml:space="preserve">
+    <value>Also delete the saved index</value>
+  </data>
+  <data name="FastSearchStatusOff" xml:space="preserve">
+    <value>Off. Turning it on indexes your NTFS drives for instant filename search. Windows asks for administrator approval once.</value>
+  </data>
+  <data name="FastSearchStatusOn" xml:space="preserve">
+    <value>On. Filename searches on indexed NTFS drives use the index.</value>
+  </data>
+  <data name="FastSearchStatusNeedsUpdate" xml:space="preserve">
+    <value>The installed indexing service is a different version. Update it to use fast search.</value>
+  </data>
+  <data name="FastSearchStatusUnknown" xml:space="preserve">
+    <value>The indexing service state couldn't be read.</value>
+  </data>
+  <data name="FastSearchStatusNotAvailable" xml:space="preserve">
+    <value>This build can't install the indexing service. Install a release build, or run fmf-service setup from an administrator terminal.</value>
+  </data>
+  <data name="FastSearchActionFailed" xml:space="preserve">
+    <value>The indexing service couldn't be changed. Check that you approved the administrator prompt and try again.</value>
+  </data>
 </root>

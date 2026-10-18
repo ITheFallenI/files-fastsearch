@@ -41,14 +41,14 @@ _Screenshots will be added with the first release._
 > There is no release yet. This section describes how installation will work once the first release is published.
 
 1. Download `FilesFastSearch.msixbundle` from the [latest release](https://github.com/ITheFallenI/files-fastsearch/releases/latest) and open it.
-2. Open **Settings → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
+2. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
 3. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
 
 Official Files, if installed, is not changed in any way. Files FastSearch does not offer to replace File Explorer, so it never takes over or removes that setting from official Files.
 
 ### Uninstalling
 
-1. In **Settings → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
+1. In **Settings → Advanced → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
 2. Uninstall Files FastSearch from **Settings → Apps** like any other app.
 
 You can also remove the service from an administrator terminal with `fmf-service uninstall --purge-data`.

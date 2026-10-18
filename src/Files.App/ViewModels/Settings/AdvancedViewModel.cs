@@ -23,6 +23,8 @@ namespace Files.App.ViewModels.Settings
 
 		private readonly IFileTagsSettingsService fileTagsSettingsService = Ioc.Default.GetRequiredService<IFileTagsSettingsService>();
 
+		public FastSearchSettingsViewModel FastSearch { get; } = new();
+
 		public ICommand SetAsDefaultExplorerCommand { get; }
 		public ICommand SetAsOpenFileDialogCommand { get; }
 		public ICommand ExportSettingsCommand { get; }

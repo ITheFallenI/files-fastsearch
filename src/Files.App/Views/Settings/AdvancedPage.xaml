@@ -113,6 +113,38 @@
 				<ToggleSwitch AutomationProperties.Name="{helpers:ResourceString Name=ShowSystemTrayIcon}" IsOn="{x:Bind ViewModel.ShowSystemTrayIcon, Mode=TwoWay}" />
 			</wctcontrols:SettingsCard>
 
+			<!--  Fast search  -->
+			<TextBlock
+				Padding="0,16,0,4"
+				FontSize="16"
+				FontWeight="Medium"
+				Text="{helpers:ResourceString Name=FastSearch}" />
+
+			<wctcontrols:SettingsExpander
+				Description="{x:Bind ViewModel.FastSearch.StatusText, Mode=OneWay}"
+				Header="{helpers:ResourceString Name=FastSearchIndexingService}"
+				IsExpanded="False">
+				<wctcontrols:SettingsExpander.HeaderIcon>
+					<FontIcon Glyph="&#xE721;" />
+				</wctcontrols:SettingsExpander.HeaderIcon>
+				<Button
+					Command="{x:Bind ViewModel.FastSearch.TurnOnCommand}"
+					Content="{x:Bind ViewModel.FastSearch.TurnOnText, Mode=OneWay}"
+					IsEnabled="{x:Bind ViewModel.FastSearch.CanTurnOn, Mode=OneWay}"
+					Style="{StaticResource AccentButtonStyle}" />
+				<wctcontrols:SettingsExpander.Items>
+					<wctcontrols:SettingsCard Description="{helpers:ResourceString Name=FastSearchRemoveDescription}" Header="{helpers:ResourceString Name=FastSearchRemove}">
+						<StackPanel Orientation="Horizontal" Spacing="12">
+							<CheckBox Content="{helpers:ResourceString Name=FastSearchDeleteIndex}" IsChecked="{x:Bind ViewModel.FastSearch.DeleteIndexOnRemove, Mode=TwoWay}" />
+							<Button
+								Command="{x:Bind ViewModel.FastSearch.RemoveCommand}"
+								Content="{helpers:ResourceString Name=FastSearchRemoveButton}"
+								IsEnabled="{x:Bind ViewModel.FastSearch.CanRemove, Mode=OneWay}" />
+						</StackPanel>
+					</wctcontrols:SettingsCard>
+				</wctcontrols:SettingsExpander.Items>
+			</wctcontrols:SettingsExpander>
+
 			<!--  Experimental Settings  -->
 			<TextBlock
 				Padding="0,16,0,4"

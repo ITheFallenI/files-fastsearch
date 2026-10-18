@@ -186,4 +186,18 @@
             <AppxPackagePayload Include="@(_FilesAppServerPackageFile)" TargetPath="Files.App.Server\%(RecursiveDir)%(Filename)%(Extension)" />
         </ItemGroup>
     </Target>
+    <!--  Find My Files indexing service (x64 only), bundled for the in-app install. Set SkipRustBuild=true to reuse an existing build.  -->
+    <PropertyGroup>
+        <FindMyFilesRoot>$(MSBuildThisFileDirectory)..\..\external\find-my-files\</FindMyFilesRoot>
+    </PropertyGroup>
+    <Target Name="BuildFindMyFilesService" BeforeTargets="BeforeBuild" Condition="'$(SkipRustBuild)' != 'true' and '$(Platform)' == 'x64'">
+        <Exec Command="cargo build --locked --release -p fmf-service" WorkingDirectory="$(FindMyFilesRoot)engine" />
+    </Target>
+    <ItemGroup Condition="'$(Platform)' == 'x64'">
+        <Content Include="$(FindMyFilesRoot)build\engine\release\fmf-service.exe" Link="fmf-service.exe" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="$(FindMyFilesRoot)LICENSE" Link="Licenses\find-my-files-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
 </Project>
