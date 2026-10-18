@@ -5,6 +5,8 @@
 > [!IMPORTANT]
 > Files FastSearch is **not** an official Files release and is not affiliated with, endorsed by or supported by the Files team or the Find My Files author. Please report problems with this build [here](https://github.com/ITheFallenI/files-fastsearch/issues), not to either upstream project.
 
+**[Download the Windows 11 x64 preview EXE](https://github.com/ITheFallenI/files-fastsearch/releases/download/v4.3.1.0/FilesFastSearch-4.3.1.0-x64-Setup.exe)** · [Release notes and certificate requirements](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.1.0)
+
 Files FastSearch keeps the Files interface, tabs, thumbnails, previews and file operations exactly as they are, and replaces the slow folder walk behind Files' search box with a native NTFS index. Results appear while you type, Everything-style, without Voidtools Everything or Windows Search indexing.
 
 ## Features
