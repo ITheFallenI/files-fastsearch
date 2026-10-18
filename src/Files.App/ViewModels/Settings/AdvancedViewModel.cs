@@ -54,6 +54,21 @@ namespace Files.App.ViewModels.Settings
 			// Make sure IsSetAsDefaultFileManager is updated
 			await Task.Yield();
 
+			if (AppLifecycleHelper.AppEnvironment is AppEnvironment.SideloadFastSearch)
+			{
+				try
+				{
+					if (IsSetAsDefaultFileManager != FastSearchExplorerIntegration.IsEnabled())
+						await FastSearchExplorerIntegration.SetEnabledAsync(IsSetAsDefaultFileManager);
+				}
+				catch (Exception exception)
+				{
+					App.Logger.LogError(exception, "Could not update FastSearch Explorer registration");
+				}
+				IsSetAsDefaultFileManager = FastSearchExplorerIntegration.IsEnabled();
+				return;
+			}
+
 			if (IsSetAsDefaultFileManager == DetectIsSetAsDefaultFileManager())
 				return;
 
@@ -260,6 +275,9 @@ namespace Files.App.ViewModels.Settings
 
 		private bool DetectIsSetAsDefaultFileManager()
 		{
+			if (AppLifecycleHelper.AppEnvironment is AppEnvironment.SideloadFastSearch)
+				return FastSearchExplorerIntegration.IsEnabled();
+
 			using var subkey = Registry.ClassesRoot.OpenSubKey(@"Folder\shell\open\command");
 			var command = (string?)subkey?.GetValue(string.Empty);
 
@@ -296,12 +314,15 @@ namespace Files.App.ViewModels.Settings
 			get => AppLifecycleHelper.AppEnvironment is AppEnvironment.Dev;
 		}
 
-		// Replacing Explorer uses per-user registration and %LocalAppData%\Files shared by every Files install,
-		// so the unofficial FastSearch fork leaves it to official Files rather than taking it over or removing it
 		public bool CanReplaceSystemFileManager
 		{
-			get => AppLifecycleHelper.AppEnvironment is not AppEnvironment.SideloadFastSearch;
+			get => true;
 		}
+
+		public string DefaultFileManagerDescription =>
+			(AppLifecycleHelper.AppEnvironment is AppEnvironment.SideloadFastSearch
+				? "FastSearchDefaultFileManagerDescription"
+				: "SettingsSetAsDefaultFileManagerDescription").GetLocalizedResource();
 
 		private FileSavePicker InitializeWithWindow(FileSavePicker obj)
 		{

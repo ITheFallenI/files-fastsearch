@@ -114,6 +114,18 @@ jobs:
       shell: pwsh
       run: dotnet run --project "$env:ADAPTER_TESTS_PROJECT_PATH" -p:Platform=x64
 
+    - name: Test Explorer registration backup and restore
+      shell: pwsh
+      run: |
+        & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File tests\Test-FastSearchExplorerIntegration.ps1
+
+    - name: Restore and build the launcher
+      shell: pwsh
+      run: |
+        msbuild src\Files.App.Launcher\Files.App.Launcher.vcxproj -t:Restore -p:RestorePackagesConfig=true -p:Platform=x64 -p:Configuration=Release -v:quiet -clp:ErrorsOnly
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        msbuild src\Files.App.Launcher\Files.App.Launcher.vcxproj -t:Build -p:Platform=x64 -p:Configuration=Release -v:quiet -clp:ErrorsOnly
+
     - name: Restore Files
       shell: pwsh
       run: msbuild "$env:SOLUTION_PATH" -t:Restore -p:Platform=x64 -p:Configuration=Debug -v:quiet

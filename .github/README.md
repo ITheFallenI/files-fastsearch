@@ -5,7 +5,7 @@
 > [!IMPORTANT]
 > Files FastSearch is **not** an official Files release and is not affiliated with, endorsed by or supported by the Files team or the Find My Files author. Please report problems with this build [here](https://github.com/ITheFallenI/files-fastsearch/issues), not to either upstream project.
 
-**[Download the Windows 11 x64 preview EXE](https://github.com/ITheFallenI/files-fastsearch/releases/download/v4.3.1.0/FilesFastSearch-4.3.1.0-x64-Setup.exe)** · [Release notes and certificate requirements](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.1.0)
+**[Download the Windows 11 x64 preview EXE](https://github.com/ITheFallenI/files-fastsearch/releases/download/v4.3.2.0/FilesFastSearch-4.3.2.0-x64-Setup.exe)** · [Release notes and certificate requirements](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.2.0)
 
 Files FastSearch keeps the Files interface, tabs, thumbnails, previews and file operations exactly as they are, and replaces the slow folder walk behind Files' search box with a native NTFS index. Results appear while you type, Everything-style, without Voidtools Everything or Windows Search indexing.
 
@@ -42,16 +42,24 @@ _Screenshots will be added with the first release._
 > [!NOTE]
 > The first download is an experimental, self-signed preview for Windows 11 x64 (build 22000 or later). Windows may show an unknown-publisher warning. It has been tested on the maintainer's PC, but not on a clean Windows installation. SignPath signing is not yet approved or configured.
 
-1. Download `FilesFastSearch-4.3.1.0-x64-Setup.exe` from the [preview release](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.1.0) and run it. The EXE includes the full MSIX app and Microsoft Windows App Runtime. You can inspect [the installation script](scripts/preview-installer/Install.ps1) first.
+1. Download `FilesFastSearch-4.3.2.0-x64-Setup.exe` from the [preview release](https://github.com/ITheFallenI/files-fastsearch/releases/tag/v4.3.2.0) and run it. The EXE includes the full MSIX app and Microsoft Windows App Runtime. You can inspect [the installation script](scripts/preview-installer/Install.ps1) first.
 2. Read the certificate prompt. If you trust this project, type `TRUST AND INSTALL` and approve the Windows administrator prompt. This adds the preview's public signing certificate to **Local Computer → Trusted People**, trusting that signing certificate for all users, then installs the app for your account. It does not add a trusted root. The expected certificate thumbprint is `0BB11DF21C43A636B0A8BEABB9546476DA0543F0`. Press Enter to cancel if you do not wish to trust it. Keep a copy of your settings before testing a preview; the installer also backs up existing FastSearch settings under `%LOCALAPPDATA%\FilesFastSearch\SettingsBackups`.
 3. Open **Settings → Advanced → Fast search** in Files FastSearch and select **Turn on fast search**. Windows asks once for administrator approval to register the indexing service; after that, Files FastSearch runs without elevation.
 4. Indexing takes a few seconds to a minute per drive. Until a drive is ready, searches on it use the regular Files search.
 
-Official Files, if installed, is not changed in any way. Files FastSearch does not offer to replace File Explorer, so it never takes over or removes that setting from official Files.
+Installing FastSearch leaves your default file manager unchanged. To open folders and **Win + E** in FastSearch, enable **Settings → Advanced → Experimental feature flags → Set Files as the default file manager**. This optional setting applies to your Windows account. It backs up the previous folder-opening commands and keeps its launcher under `%LOCALAPPDATA%\FilesFastSearch\ShellIntegration`, separate from official Files.
+
+Turn the toggle off to restore the previous handler (normally Explorer). Restoration only changes registrations still owned by FastSearch; a newer choice of file manager is preserved. Backups remain in the `Backups` folder beside the launcher. If the app is uninstalled while enabled, the retained launcher restores the previous registration on the next folder launch. A manual recovery command is also available:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\FilesFastSearch\ShellIntegration\RestoreFastSearchExplorer.ps1" -Action Restore
+```
+
+Open/Save dialogs keep their existing Windows behaviour. Special shell locations can still open in Explorer.
 
 ### Uninstalling
 
-1. In **Settings → Advanced → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
+1. If enabled, turn off **Set Files as the default file manager** to restore your previous handler. Then, in **Settings → Advanced → Fast search**, select **Remove indexing service** (optionally deleting the saved index).
 2. Uninstall Files FastSearch from **Settings → Apps** like any other app.
 3. If you trusted the preview certificate, open `certlm.msc` → **Trusted People → Certificates**, verify its thumbprint above, and remove that certificate when you no longer need any builds signed with it. This needs administrator approval.
 
@@ -114,7 +122,7 @@ The integration is deliberately small (a new project, one search hook, and ident
 - Very broad searches show the first 20,000 matches.
 - With **Show hidden items** on, hidden and protected system files are both included.
 - Searching inside folders reached through junctions or volume mount points only returns what is on the drive the path starts on.
-- Files' "Replace File Explorer" and "Replace Open File dialog" options are hidden, because they are shared with official Files.
+- Explorer replacement is optional and uses per-user registry overrides. Open/Save dialog replacement remains unavailable in this fork.
 
 ## Credits and licences
 

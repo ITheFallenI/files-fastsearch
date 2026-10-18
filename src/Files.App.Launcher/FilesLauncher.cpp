@@ -13,6 +13,7 @@
 #include <ShObjIdl_core.h>
 #include <tlhelp32.h>
 #include <vector>
+#include <string_view>
 #include <wil/resource.h>
 
 #include "OpenInFolder.h"
@@ -23,6 +24,7 @@
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "uuid.lib")
 #pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "advapi32.lib")
 
 constexpr auto ID_TIMEREXPIRED = 101;
 
@@ -33,6 +35,7 @@ void WaitForProtocolActivation(HANDLE hProcess);
 void RunFileExplorer(const TCHAR* openDirectory);
 size_t strifind(const std::wstring& strHaystack, const std::wstring& strNeedle);
 bool comparei(std::wstring stringA, std::wstring stringB);
+void RestoreFastSearchExplorer();
 std::string wstring_to_utf8_hex(const std::wstring& input);
 std::wstring str2wstr(const std::string& str);
 
@@ -74,6 +77,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	std::wcout << szBuf << std::endl;
 	if (_waccess(szBuf, 0) == -1)
 	{
+		if constexpr (std::wstring_view(L"files-dev").find(L"fastsearch") != std::wstring_view::npos)
+		{
+			RestoreFastSearchExplorer();
+			RunFileExplorer(withArgs ? openDirectory : NULL);
+			if (_debugStream)
+				fclose(_debugStream);
+			return 0;
+		}
+
 		std::cout << "Files has been uninstalled" << std::endl;
 
 		MessageBox(
@@ -399,16 +411,68 @@ void WaitForProtocolActivation(HANDLE hProcess)
 	}
 }
 
+void RestoreFastSearchExplorer()
+{
+	wchar_t modulePath[32768];
+	const auto length = GetModuleFileNameW(NULL, modulePath, _countof(modulePath));
+	if (!length || length >= _countof(modulePath))
+		return;
+	std::wstring launcher(modulePath);
+	const auto parent = launcher.substr(0, launcher.find_last_of(L"\\"));
+	wchar_t systemDirectory[MAX_PATH];
+	if (GetSystemDirectoryW(systemDirectory, _countof(systemDirectory)))
+	{
+		const auto powershell = std::wstring(systemDirectory) + L"\\WindowsPowerShell\\v1.0\\powershell.exe";
+		const auto arguments = L"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + parent + L"\\RestoreFastSearchExplorer.ps1\" -Action Restore";
+		SHELLEXECUTEINFOW info = { sizeof(info) };
+		info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
+		info.lpFile = powershell.c_str();
+		info.lpParameters = arguments.c_str();
+		info.nShow = SW_HIDE;
+		if (ShellExecuteExW(&info) && info.hProcess)
+		{
+			WaitForSingleObject(info.hProcess, 15000);
+			CloseHandle(info.hProcess);
+		}
+	}
+
+	// If the backup/helper is unavailable, remove only our own overrides to reveal Windows' defaults.
+	constexpr const wchar_t* paths[] = {
+		L"Software\\Classes\\Folder\\shell\\open\\command",
+		L"Software\\Classes\\Folder\\shell\\explore\\command",
+		L"Software\\Classes\\CLSID\\{52205fd8-5dfb-447d-801a-d0b52f2e83e1}\\shell\\opennewwindow\\command"
+	};
+	for (size_t i = 0; i < _countof(paths); ++i)
+	{
+		HKEY key;
+		if (RegOpenKeyExW(HKEY_CURRENT_USER, paths[i], 0, KEY_QUERY_VALUE | KEY_SET_VALUE, &key) != ERROR_SUCCESS)
+			continue;
+		wchar_t value[32768] = {};
+		DWORD bytes = sizeof(value), kind = 0;
+		const auto expected = L"\"" + launcher + L"\"" + (i < 2 ? L" \"%1\"" : L"");
+		if (RegQueryValueExW(key, NULL, NULL, &kind, reinterpret_cast<BYTE*>(value), &bytes) == ERROR_SUCCESS
+			&& kind == REG_SZ && bytes < sizeof(value) && _wcsicmp(value, expected.c_str()) == 0)
+		{
+			RegDeleteValueW(key, NULL);
+			bytes = sizeof(value);
+			if (RegQueryValueExW(key, L"DelegateExecute", NULL, &kind, reinterpret_cast<BYTE*>(value), &bytes) == ERROR_SUCCESS
+				&& kind == REG_SZ && bytes == sizeof(wchar_t) && value[0] == L'\0')
+				RegDeleteValueW(key, L"DelegateExecute");
+		}
+		RegCloseKey(key);
+	}
+}
+
 void RunFileExplorer(const TCHAR* openDirectory)
 {
 	// Run explorer
 	SHELLEXECUTEINFO ShExecInfo = { 0 };
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 	ShExecInfo.lpFile = L"explorer.exe";
+	TCHAR args[1024];
 
 	if (openDirectory != NULL)
 	{
-		TCHAR args[1024];
 		swprintf(args, _countof(args) - 1, L"\"%s\"", openDirectory);
 		ShExecInfo.lpParameters = args;
 	}

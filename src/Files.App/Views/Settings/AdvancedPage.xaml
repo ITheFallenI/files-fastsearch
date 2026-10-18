@@ -157,7 +157,7 @@
 			<wctcontrols:SettingsCard
 				x:Name="SetAsDefaultSettingsBlockControl"
 				x:Load="{x:Bind ViewModel.CanReplaceSystemFileManager}"
-				Description="{helpers:ResourceString Name=SettingsSetAsDefaultFileManagerDescription}"
+				Description="{x:Bind ViewModel.DefaultFileManagerDescription}"
 				Header="{helpers:ResourceString Name=SettingsSetAsDefaultFileManager}">
 				<wctcontrols:SettingsCard.HeaderIcon>
 					<FontIcon Glyph="&#xEC50;" />
