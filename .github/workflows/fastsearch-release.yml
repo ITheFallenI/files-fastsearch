@@ -42,6 +42,7 @@ env:
   WORKING_DIR: '${{ github.workspace }}'
   SOLUTION_NAME: 'Files.slnx'
   APP_PROJECT_PATH: 'src\Files.App\Files.App.csproj'
+  LAUNCHER_PROJECT_PATH: 'src\Files.App.Launcher\Files.App.Launcher.vcxproj'
   PACKAGE_MANIFEST_PATH: 'src\Files.App\Package.appxmanifest'
   ENGINE_DIR: '${{ github.workspace }}\external\find-my-files\engine'
   ENGINE_RELEASE_DIR: '${{ github.workspace }}\external\find-my-files\build\engine\release'
@@ -198,6 +199,23 @@ jobs:
           -p:Platform=$env:PLATFORM `
           -p:Configuration=$env:CONFIGURATION `
           -p:PublishReadyToRun=true `
+          -v:quiet
+
+    # The launcher uses packages.config, which the solution restore skips; without it the package
+    # silently lacks Files.App.Launcher.exe
+    - name: Restore NuGet packages for the launcher
+      shell: pwsh
+      run: |
+        nuget restore "$env:LAUNCHER_PROJECT_PATH" `
+          -SolutionDirectory "$env:WORKING_DIR"
+
+    - name: Build the launcher
+      shell: pwsh
+      run: |
+        msbuild "$env:LAUNCHER_PROJECT_PATH" `
+          -t:Build `
+          -p:Platform=$env:PLATFORM `
+          -p:Configuration=$env:CONFIGURATION `
           -v:quiet
 
     - name: Build & package Files FastSearch
